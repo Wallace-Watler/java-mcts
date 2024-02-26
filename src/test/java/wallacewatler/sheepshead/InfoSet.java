@@ -112,6 +112,11 @@ public final class InfoSet implements wallacewatler.moismcts.InfoSet<GameState, 
     }
 
     @Override
+    public int playerId() {
+        return pov;
+    }
+
+    @Override
     public GameState determinize(Random rand) {
         if(pov != playerAboutToMove)
             throw new IllegalStateException("should not be determinizing state when not about to move");

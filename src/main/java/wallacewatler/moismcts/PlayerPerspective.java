@@ -2,25 +2,23 @@ package wallacewatler.moismcts;
 
 import java.util.ArrayDeque;
 
+/**
+ * @version 0.1.0
+ * @since 0.1.0
+ *
+ * @author Wallace Watler
+ *
+ * @param <STATE>
+ * @param <INFO_SET>
+ * @param <MOVE>
+ */
 final class PlayerPerspective<STATE, INFO_SET, MOVE extends Move<?, INFO_SET>> {
-    /*
-    TODO: Pull infoSet out of this class. The info set is only required for players that this system is modeling; any
-     external players should not have an info set and cannot be searched, but will still need a PlayerPerspective to
-     store their decision tree. EDIT: Just throw these away when done searching.
-     */
-    private INFO_SET infoSet;
     private Node<STATE, MOVE> rootNode = new Node<>();
 
     // Pre-allocated collection used during iteration
     private final ArrayDeque<Node<STATE, MOVE>> traversedNodes = new ArrayDeque<>();
 
-    PlayerPerspective(INFO_SET infoSet) {
-        this.infoSet = infoSet;
-    }
-
-    INFO_SET getInfoSet() {
-        return infoSet;
-    }
+    PlayerPerspective() {}
 
     Node<STATE, MOVE> getRootNode() {
         return rootNode;
@@ -28,7 +26,6 @@ final class PlayerPerspective<STATE, INFO_SET, MOVE extends Move<?, INFO_SET>> {
 
     void advanceRoot(MOVE move) {
         rootNode = rootNode.child(move);
-        infoSet = move.applyToInfoSet(infoSet);
     }
 
     void beginTraversal() {
@@ -37,8 +34,7 @@ final class PlayerPerspective<STATE, INFO_SET, MOVE extends Move<?, INFO_SET>> {
     }
 
     void descend(MOVE move) {
-        final Node<STATE, MOVE> child = currentNode().child(move);
-        traversedNodes.push(child);
+        traversedNodes.push(currentNode().child(move));
     }
 
     void backPropagate(double reward) {
