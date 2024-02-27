@@ -46,58 +46,112 @@ public final class MOISMCTS {
     public static
     <STATE extends State<ACTION>, ACTION extends Action<STATE, MOVE>, INFO_SET extends InfoSet<STATE, ACTION>, MOVE extends Move<ACTION, INFO_SET>>
     ACTION search(int numPlayers, INFO_SET infoSet, SearchParameters params, Random rand) {
-        final int player = infoSet.playerId();
+        final int playerSearching = infoSet.playerId();
 
-        if(player >= numPlayers)
-            throw new IllegalArgumentException("player ID must be less than the number of players, given ID " + player + " and " + numPlayers + " players");
+        if(playerSearching >= numPlayers)
+            throw new IllegalArgumentException("player ID must be less than the number of players, given ID " + playerSearching + " and " + numPlayers + " players");
 
-        final ArrayList<PlayerPerspective<STATE, INFO_SET, MOVE>> perspectives = new ArrayList<>(numPlayers);
+        // The root node for each player's tree. The trees are shared across threads.
+        final ArrayList<Node<STATE, MOVE>> rootNodes = new ArrayList<>(numPlayers);
         for(int i = 0; i < numPlayers; i++)
-            perspectives.add(new PlayerPerspective<>());
+            rootNodes.add(new Node<>());
+
+        final Thread[] threads = new Thread[params.threadCount()];
+        for(int threadNum = 0; threadNum < params.threadCount(); threadNum++) {
+            // Divide iterations as evenly as possible between the threads.
+            final int threadIters = params.maxIters() / params.threadCount() + (params.maxIters() % params.threadCount() > threadNum ? 1 : 0);
+
+            // Each thread gets its own RNG so that its results are reproducible.
+            final Random threadRand = new Random(rand.nextLong());
+
+            threads[threadNum] = new Thread(() -> parallelIters(numPlayers, infoSet, params, threadRand, rootNodes, threadIters), "moismcts" + threadNum);
+            threads[threadNum].start();
+        }
+
+        for(Thread thread : threads) {
+            try {
+                thread.join();
+            } catch(InterruptedException ignored) {}
+        }
+
+        // Recommend the most selected action. Ties are broken by randomness.
+        final Node<STATE, MOVE> rootNode = rootNodes.get(playerSearching);
+        final ArrayList<ACTION> maxActions = new ArrayList<>();
+        int maxVisits = 0;
+        for(ACTION action : infoSet.determinize(rand).availableActions()) {
+            final int visitCount = rootNode.child(action.observe(playerSearching)).getVisitCount();
+            if(visitCount > maxVisits) {
+                maxVisits = visitCount;
+                maxActions.clear();
+                maxActions.add(action);
+            } else if(visitCount == maxVisits) {
+                maxActions.add(action);
+            }
+        }
+
+        return maxActions.get(rand.nextInt(maxActions.size()));
+    }
+
+    private static
+    <STATE extends State<ACTION>, ACTION extends Action<STATE, MOVE>, INFO_SET extends InfoSet<STATE, ACTION>, MOVE extends Move<ACTION, INFO_SET>>
+    void parallelIters(int numPlayers, INFO_SET infoSet, SearchParameters params, Random rand, ArrayList<Node<STATE, MOVE>> rootNodes, int threadIters) {
+        final int playerSearching = infoSet.playerId();
+        final long start = System.currentTimeMillis();
 
         // Pre-allocated list used during iteration
         final ArrayList<ACTION> availableActions = new ArrayList<>();
 
+        // The path through each player's tree
+        final ArrayList<ArrayDeque<Node<STATE, MOVE>>> traversedNodes = new ArrayList<>(numPlayers);
+        for(int i = 0; i < numPlayers; i++)
+            traversedNodes.add(new ArrayDeque<>());
+
         int iters = 0;
-        final long start = System.currentTimeMillis();
-        long now = start;
-        while(now - start <= params.getMaxTime() && (now - start < params.getMinTime() || iters <= params.getMaxIters())) {
-            // Begin iteration
-            for(PlayerPerspective<STATE, INFO_SET, MOVE> perspective : perspectives)
-                perspective.beginTraversal();
+        long now = System.currentTimeMillis();
+        while(now - start <= params.maxTime() && (now - start < params.minTime() || iters <= threadIters)) {
+            // Begin iteration at the root
+            for(int i = 0; i < numPlayers; i++) {
+                traversedNodes.get(i).clear();
+                traversedNodes.get(i).push(rootNodes.get(i));
+            }
 
             // Choose a random determinized state consistent with the information set of the player searching the tree.
-            PlayerPerspective<STATE, INFO_SET, MOVE> playerToMove = perspectives.get(player);
             STATE simulatedState = infoSet.determinize(rand);
 
             // Selection and Expansion - Select child nodes using the tree policy, expanding where necessary.
-            Node<STATE, MOVE> currentNode = playerToMove.getRootNode();
             availableActions.clear();
             availableActions.addAll(simulatedState.availableActions());
             infoSet.removePoorActions(availableActions);
+            Node<STATE, MOVE> currentNode = rootNodes.get(playerSearching);
 
             boolean continueSelection = true;
             while(!simulatedState.isTerminal() && continueSelection) {
                 final int playerAboutToMove = simulatedState.playerAboutToMove();
 
-                final ACTION selectedAction = params.getUctPolicy().chooseAction(playerAboutToMove, currentNode, availableActions, rand);
+                final ACTION selectedAction = currentNode.chooseAction(playerAboutToMove, availableActions, rand, params.uct());
                 for(ACTION action : availableActions)
-                    currentNode.child(action.observe(playerAboutToMove)).availableCount++;
+                    currentNode.child(action.observe(playerAboutToMove)).incAvailableCount();
 
-                // If node resulting from selected move has not been visited, stop selection.
-                if(currentNode.child(selectedAction.observe(playerAboutToMove)).visitCount == 0)
+                final Node<STATE, MOVE> selectedChild = currentNode.child(selectedAction.observe(playerAboutToMove));
+                if(selectedChild.getVisitCount() == 0)
                     continueSelection = false;
+
+                /*
+                A node's visit count is updated as soon as it's selected so that it has a virtual loss (its UCT value
+                drops) until backpropagation updates its total reward. This is important for parallelization as it
+                lessens the chance that many threads choose the same path simultaneously.
+                 */
+                selectedChild.incVisitCount();
 
                 simulatedState = selectedAction.applyToState(simulatedState, rand);
 
                 // Descend through each player's tree.
-                for(int i = 0; i < perspectives.size(); i++)
-                    perspectives.get(i).descend(selectedAction.observe(i));
+                for(int i = 0; i < numPlayers; i++)
+                    traversedNodes.get(i).push(currentNode.child(selectedAction.observe(i)));
 
-                playerToMove = perspectives.get(simulatedState.playerAboutToMove());
                 availableActions.clear();
                 availableActions.addAll(simulatedState.availableActions());
-                currentNode = playerToMove.currentNode();
+                currentNode = traversedNodes.get(simulatedState.playerAboutToMove()).getFirst();
             }
 
             // Simulation - Choose a random action until the games ends.
@@ -111,28 +165,12 @@ public final class MOISMCTS {
             final double[] rewards = simulatedState.rewards();
 
             // Backpropagation - Update all nodes that were selected with the results of simulation.
-            for(int i = 0; i < perspectives.size(); i++)
-                perspectives.get(i).backPropagate(rewards[i]);
+            for(int i = 0; i < numPlayers; i++)
+                for(Node<STATE, MOVE> node : traversedNodes.get(i))
+                    node.addReward(rewards[i]);
 
             iters++;
             now = System.currentTimeMillis();
         }
-
-        // Recommend the most selected action. Ties are broken by randomness.
-        final Node<STATE, MOVE> rootNode = perspectives.get(player).getRootNode();
-        final ArrayList<ACTION> maxActions = new ArrayList<>();
-        int maxVisits = 0;
-        for(ACTION action : infoSet.determinize(rand).availableActions()) {
-            final int visitCount = rootNode.child(action.observe(player)).visitCount;
-            if(visitCount > maxVisits) {
-                maxVisits = visitCount;
-                maxActions.clear();
-                maxActions.add(action);
-            } else if(visitCount == maxVisits) {
-                maxActions.add(action);
-            }
-        }
-
-        return maxActions.get(rand.nextInt(maxActions.size()));
     }
 }

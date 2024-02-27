@@ -57,11 +57,7 @@ public final class TestAiPlayers {
 
         final GameState rootState = new GameState(rand);
         final List<InfoSet> infoSets = IntStream.range(0, 4).mapToObj(i -> new InfoSet(rootState, i)).toList();
-        final SearchParameters params = new SearchParameters()
-                .withMinTime(0)
-                .withMaxTime(Long.MAX_VALUE)
-                .withMaxIters(1000)
-                .withUct(new UCT(60 * Math.sqrt(2), true));
+        final SearchParameters params = new SearchParameters(0, Long.MAX_VALUE, 1000, new UCT(60 * Math.sqrt(2), true), 4);
 
         LOGGER.info("Search parameters: '" + params + "'.");
         LOGGER.debug(rootState.toString());

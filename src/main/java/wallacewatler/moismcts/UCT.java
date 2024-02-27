@@ -1,9 +1,5 @@
 package wallacewatler.moismcts;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
 /**
  * Upper confidence bound policy for trees (UCT).
  * <p>
@@ -21,34 +17,4 @@ import java.util.Random;
  * @author Wallace Watler
  */
 public record UCT(double explorationParam, boolean favorUnexplored) {
-    <ACTION extends Action<?, MOVE>, MOVE> ACTION chooseAction(int player, Node<?, MOVE> node, List<ACTION> actions, Random rand) {
-        if(node.visitCount == 0)
-            return actions.get(rand.nextInt(actions.size()));
-
-        final ArrayList<ACTION> maxActions = new ArrayList<>();
-        double maxUctValue = Double.NEGATIVE_INFINITY;
-
-        for(ACTION action : actions) {
-            final Node<?, MOVE> child = node.child(action.observe(player));
-
-            final double uctValue;
-            if(child == null || child.availableCount == 0 || child.visitCount == 0) {
-                uctValue = favorUnexplored ? Double.POSITIVE_INFINITY : (node.totalReward / node.visitCount);
-            } else {
-                final double exploitation = child.totalReward / child.visitCount;
-                final double exploration = explorationParam * Math.sqrt(Math.log(child.availableCount) / child.visitCount);
-                uctValue = exploitation + exploration;
-            }
-
-            if(uctValue == maxUctValue) {
-                maxActions.add(action);
-            } else if(uctValue > maxUctValue) {
-                maxUctValue = uctValue;
-                maxActions.clear();
-                maxActions.add(action);
-            }
-        }
-
-        return maxActions.get(rand.nextInt(maxActions.size()));
-    }
 }

@@ -52,11 +52,7 @@ public final class TestWithHumanPlayer {
 
         final GameState rootState = new GameState(rand);
         final List<InfoSet> infoSets = IntStream.range(0, 3).mapToObj(i -> new InfoSet(rootState, i)).toList();
-        final SearchParameters params = new SearchParameters()
-                .withMinTime(1000)
-                .withMaxTime(5000)
-                .withMaxIters(100000)
-                .withUct(new UCT(60 * Math.sqrt(2), true));
+        final SearchParameters params = new SearchParameters(1000, 5000, 100000, new UCT(60 * Math.sqrt(2), true), 4);
 
         LOGGER.info("Search parameters: '" + params + "'.");
         LOGGER.debug(rootState.toString());
