@@ -1,6 +1,6 @@
 target/
 out/
-src/test/java/wallacewatler/sleuth/
+src/test/java/wallacewatler/javamcts/sleuth/
 src/test/prolog/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
