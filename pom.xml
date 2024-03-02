@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.github.wallace-watler</groupId>
+    <groupId>io.github.wallace-watler.javamcts</groupId>
     <artifactId>java-mcts</artifactId>
-    <version>0.1.0-pre3</version>
+    <version>0.1.0-pre4</version>
     <packaging>jar</packaging>
 
     <name>JavaMCTS</name>
