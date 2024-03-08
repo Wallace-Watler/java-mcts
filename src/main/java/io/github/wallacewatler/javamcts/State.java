@@ -14,7 +14,6 @@ import java.util.List;
  * @param <ACTION> the type of actions taken in this state
  *
  * @see VisibleState
- * @see Action
  */
 public interface State<ACTION> {
     /**

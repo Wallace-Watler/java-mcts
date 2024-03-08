@@ -26,13 +26,14 @@ TODO
 
 ### Multiple-observer Information Set MCTS
 A variant of MCTS that is effective on games of imperfect information, where knowledge of the game state can vary
-between each player. Furthermore, a player's actions may be only partially visible to other players or even completely
-hidden. Simultaneous actions can be modeled as sequential actions that are hidden from all other players until some
-event reveals them at once. Examples of games in this category are hearts, cribbage, and, poker.
+between each player. Furthermore, a player's actions may be partially or completely hidden from other players.
+Simultaneous actions can be modeled as sequential actions that are hidden from all other players until some event
+reveals them at once. Examples of games in this category are hearts, cribbage, and poker.
 
 #### Usage
 TODO
 
 ## Planned features
-- Chance nodes and transposition tables for closed loop MCTS
+- Root parallelization
+- Transposition tables for closed loop MCTS
 - Tools for modeling information sets

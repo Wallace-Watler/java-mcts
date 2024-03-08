@@ -1,11 +1,11 @@
 package io.github.wallacewatler.javamcts.sheepshead;
 
-import io.github.wallacewatler.javamcts.Action;
+import io.github.wallacewatler.javamcts.MOISMCTS;
 import io.github.wallacewatler.javamcts.Move;
 
 import java.util.Random;
 
-public record PlayCard(Card card) implements Action<GameState, PlayCard>, Move<PlayCard, InfoSet> {
+public record PlayCard(Card card) implements MOISMCTS.Action<GameState, PlayCard>, Move<PlayCard> {
     @Override
     public GameState applyToState(GameState state, Random rand) {
         final Player player = state.players[state.activePlayer];
@@ -28,7 +28,6 @@ public record PlayCard(Card card) implements Action<GameState, PlayCard>, Move<P
         return this;
     }
 
-    @Override
     public InfoSet applyToInfoSet(InfoSet infoSet) {
         final PlayerInfo player = infoSet.playerInfos[infoSet.playerAboutToMove];
         player.handSize--;

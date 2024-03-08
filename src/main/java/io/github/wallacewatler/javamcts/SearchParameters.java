@@ -7,8 +7,8 @@ package io.github.wallacewatler.javamcts;
  * the maximum time has passed or the maximum number of iterations has been reached. The actual time spent searching may
  * be larger than the defined maximum time, depending on how long the currently running iterations take to complete.<br>
  * <br>
- * {@code SearchParameters} also defines the number of threads to use for parallelized search (or serial search in the
- * case of one thread). There is no guarantee that more threads will result in more efficient searches.
+ * {@code SearchParameters} also defines the number of threads to use for the search. There is no guarantee that more
+ * threads will result in more efficient searches.
  *
  * @param minTime The minimum search time in milliseconds.
  * @param maxTime The maximum search time in milliseconds.

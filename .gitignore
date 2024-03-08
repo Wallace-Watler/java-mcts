@@ -1,5 +1,4 @@
 target/
-out/
 src/test/java/io/github/wallacewatler/javamcts/sleuth/
 src/test/prolog/
 !.mvn/wrapper/maven-wrapper.jar

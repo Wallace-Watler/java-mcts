@@ -6,80 +6,92 @@ import java.util.Random;
 
 public final class TestMancalaSpeed {
     public static void main(String[] args) {
-        testItersPerMsMCTS(1);
-        testItersPerMsMCTS(2);
-        testItersPerMsMCTS(3);
-        testItersPerMsMCTS(4);
-        testItersPerMsOLMCTS(1);
-        testItersPerMsOLMCTS(2);
-        testItersPerMsOLMCTS(3);
-        testItersPerMsOLMCTS(4);
-        testItersPerMsMOISMCTS(1);
-        testItersPerMsMOISMCTS(2);
-        testItersPerMsMOISMCTS(3);
-        testItersPerMsMOISMCTS(4);
+        testItersPerMsMCTS(new MCTSRP(), 1);
+        testItersPerMsMCTS(new MCTSRP(), 2);
+        testItersPerMsMCTS(new MCTSRP(), 3);
+        testItersPerMsMCTS(new MCTSRP(), 4);
+        testItersPerMsMCTS(new MCTSTP(), 1);
+        testItersPerMsMCTS(new MCTSTP(), 2);
+        testItersPerMsMCTS(new MCTSTP(), 3);
+        testItersPerMsMCTS(new MCTSTP(), 4);
+        testItersPerMsOLMCTS(new OLMCTSRP(), 1);
+        testItersPerMsOLMCTS(new OLMCTSRP(), 2);
+        testItersPerMsOLMCTS(new OLMCTSRP(), 3);
+        testItersPerMsOLMCTS(new OLMCTSRP(), 4);
+        testItersPerMsOLMCTS(new OLMCTSTP(), 1);
+        testItersPerMsOLMCTS(new OLMCTSTP(), 2);
+        testItersPerMsOLMCTS(new OLMCTSTP(), 3);
+        testItersPerMsOLMCTS(new OLMCTSTP(), 4);
+        testItersPerMsMOISMCTS(new MOISMCTSRP(), 1);
+        testItersPerMsMOISMCTS(new MOISMCTSRP(), 2);
+        testItersPerMsMOISMCTS(new MOISMCTSRP(), 3);
+        testItersPerMsMOISMCTS(new MOISMCTSRP(), 4);
+        testItersPerMsMOISMCTS(new MOISMCTSTP(), 1);
+        testItersPerMsMOISMCTS(new MOISMCTSTP(), 2);
+        testItersPerMsMOISMCTS(new MOISMCTSTP(), 3);
+        testItersPerMsMOISMCTS(new MOISMCTSTP(), 4);
     }
 
-    private static void testItersPerMsMCTS(int threadCount) {
+    private static void testItersPerMsMCTS(MCTS mcts, int threadCount) {
         final Sampler itersPerMs = new Sampler();
 
-        for(int i = 0; i < 10; i++) {
-            final MCTS<MancalaState, ChooseHole> mcts = new MCTS<>(2, new MancalaState());
+        for(int i = 0; i < 30; i++) {
+            final MancalaState rootState = new MancalaState();
             final SearchParameters params = new SearchParameters(0, 100, Integer.MAX_VALUE, new UCT(Math.sqrt(2), true), threadCount);
-            int iters = 0;
+            double iters = 0;
             long duration = 0;
-            while(!mcts.hasGameEnded()) {
-                final SearchResults<ChooseHole> results = mcts.search(params, new Random());
-                mcts.advanceGame(results.bestAction());
-                iters += results.iters();
+            while(!rootState.validActions().isEmpty()) {
+                final SearchResults<ChooseHole> results = mcts.search(2, rootState, params, new Random());
+                results.bestAction().applyToState(rootState);
+                iters += results.itersPerThread() * threadCount;
                 duration += results.duration();
             }
 
-            itersPerMs.addSample((double) iters / duration);
+            itersPerMs.addSample(iters / duration);
             final String itersPerMsCI = String.format("%,.0f ± %,.0f", itersPerMs.getMean(), itersPerMs.getStdDev() * 2);
-            System.out.printf("MCTS, %d threads: %s iterations / ms%n", threadCount, itersPerMsCI);
+            System.out.printf("%s, %d threads: %s iterations / ms%n", mcts, threadCount, itersPerMsCI);
         }
     }
 
-    private static void testItersPerMsOLMCTS(int threadCount) {
+    private static void testItersPerMsOLMCTS(OLMCTS olmcts, int threadCount) {
         final Sampler itersPerMs = new Sampler();
 
-        for(int i = 0; i < 10; i++) {
+        for(int i = 0; i < 30; i++) {
             final MancalaState rootState = new MancalaState();
             final SearchParameters params = new SearchParameters(0, 100, Integer.MAX_VALUE, new UCT(Math.sqrt(2), true), threadCount);
-            int iters = 0;
+            double iters = 0;
             long duration = 0;
             while(!rootState.validActions().isEmpty()) {
-                final SearchResults<ChooseHole> results = OLMCTS.search(2, rootState, params, new Random());
+                final SearchResults<ChooseHole> results = olmcts.search(2, rootState, params, new Random());
                 results.bestAction().applyToState(rootState);
-                iters += results.iters();
+                iters += results.itersPerThread() * threadCount;
                 duration += results.duration();
             }
 
-            itersPerMs.addSample((double) iters / duration);
+            itersPerMs.addSample(iters / duration);
             final String itersPerMsCI = String.format("%,.0f ± %,.0f", itersPerMs.getMean(), itersPerMs.getStdDev() * 2);
-            System.out.printf("OLMCTS, %d threads: %s iterations / ms%n", threadCount, itersPerMsCI);
+            System.out.printf("%s, %d threads: %s iterations / ms%n", olmcts, threadCount, itersPerMsCI);
         }
     }
 
-    private static void testItersPerMsMOISMCTS(int threadCount) {
+    private static void testItersPerMsMOISMCTS(MOISMCTS moismcts, int threadCount) {
         final Sampler itersPerMs = new Sampler();
 
-        for(int i = 0; i < 10; i++) {
+        for(int i = 0; i < 30; i++) {
             final MancalaState rootState = new MancalaState();
             final SearchParameters params = new SearchParameters(0, 100, Integer.MAX_VALUE, new UCT(Math.sqrt(2), true), threadCount);
-            int iters = 0;
+            double iters = 0;
             long duration = 0;
             while(!rootState.validActions().isEmpty()) {
-                final SearchResults<ChooseHole> results = MOISMCTS.search(2, rootState, params, new Random());
+                final SearchResults<ChooseHole> results = moismcts.search(2, rootState, params, new Random());
                 results.bestAction().applyToState(rootState);
-                iters += results.iters();
+                iters += results.itersPerThread() * threadCount;
                 duration += results.duration();
             }
 
-            itersPerMs.addSample((double) iters / duration);
+            itersPerMs.addSample(iters / duration);
             final String itersPerMsCI = String.format("%,.0f ± %,.0f", itersPerMs.getMean(), itersPerMs.getStdDev() * 2);
-            System.out.printf("MO-ISMCTS, %d threads: %s iterations / ms%n", threadCount, itersPerMsCI);
+            System.out.printf("%s, %d threads: %s iterations / ms%n", moismcts, threadCount, itersPerMsCI);
         }
     }
 }

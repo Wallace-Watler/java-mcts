@@ -6,7 +6,7 @@
 
     <groupId>io.github.wallace-watler.javamcts</groupId>
     <artifactId>java-mcts</artifactId>
-    <version>0.1.0-pre4</version>
+    <version>0.1.0-pre5</version>
     <packaging>jar</packaging>
 
     <name>JavaMCTS</name>

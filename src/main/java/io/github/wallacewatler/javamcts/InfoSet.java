@@ -13,12 +13,12 @@ import java.util.Random;
  * @author Wallace Watler
  *
  * @param <STATE> the type of state this information set models knowledge of
- * @param <ACTION> the type of actions done by the owner of this information set
+ * @param <MOVE> the type of moves done by the owner of this information set
  *
  * @see State
- * @see Action
+ * @see Move
  */
-public interface InfoSet<STATE, ACTION> {
+public interface InfoSet<STATE, MOVE> {
     /**
      * @return The player that this information set belongs to.
      */
@@ -37,13 +37,13 @@ public interface InfoSet<STATE, ACTION> {
 
     // TODO: Maybe just have InfoSet define considerableActions()
     /**
-     * Remove actions from {@code validActions} that are obviously not rewarding. The default behavior is to keep all
-     * valid actions. Actions must not be added to {@code validActions}, and at least one action must remain.
+     * Remove actions from {@code validMoves} that are obviously not rewarding. The default behavior is to keep all
+     * valid moves. Moves must not be added to {@code validMoves}, and at least one move must remain.
      *
-     * @param validActions the actions that are available to the owner of this information set
+     * @param validMoves the moves that are available to the owner of this information set
      *
-     * @implNote This method can be overridden to remove some actions from consideration based on domain knowledge of
-     * the game. Doing so may improve search quality as time will not be wasted on actions that are obviously poor.
+     * @implNote This method can be overridden to remove some moves from consideration based on domain knowledge of
+     * the game. Doing so may improve search quality as time will not be wasted on moves that are obviously poor.
      */
-    default void removePoorActions(List<? extends ACTION> validActions) {}
+    default void removePoorMoves(List<? extends MOVE> validMoves) {}
 }

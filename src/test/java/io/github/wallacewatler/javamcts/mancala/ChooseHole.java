@@ -1,11 +1,14 @@
 package io.github.wallacewatler.javamcts.mancala;
 
-import io.github.wallacewatler.javamcts.DeterministicAction;
+import io.github.wallacewatler.javamcts.MCTS;
+import io.github.wallacewatler.javamcts.MOISMCTS;
 import io.github.wallacewatler.javamcts.Move;
+import io.github.wallacewatler.javamcts.OLMCTS;
 
 import java.util.Arrays;
+import java.util.Random;
 
-public record ChooseHole(int hole) implements DeterministicAction<MancalaState>, Move<ChooseHole, MancalaState> {
+public record ChooseHole(int hole) implements MCTS.Action<MancalaState>, OLMCTS.Action<MancalaState>, MOISMCTS.Action<MancalaState, ChooseHole>, Move<ChooseHole> {
     @Override
     public MancalaState applyToState(MancalaState state) {
         // Pick up pieces in chosen hole.
@@ -62,8 +65,13 @@ public record ChooseHole(int hole) implements DeterministicAction<MancalaState>,
     }
 
     @Override
-    public MancalaState applyToInfoSet(MancalaState state) {
+    public MancalaState applyToState(MancalaState state, Random rand) {
         return applyToState(state);
+    }
+
+    @Override
+    public ChooseHole observe(int observer) {
+        return this;
     }
 
     @Override

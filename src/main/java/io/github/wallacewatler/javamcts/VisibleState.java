@@ -15,13 +15,9 @@ import java.util.List;
  * @param <ACTION> the type of actions taken in this state
  *
  * @see State
- * @see Action
  */
 public interface VisibleState<SELF extends VisibleState<SELF, ACTION>, ACTION> extends State<ACTION> {
     /**
-     * @return A list containing all the valid actions for the active player. The game has ended if and only if there
-     * are no valid actions.
-     *
      * @apiNote A state in which the game has ended is not to be confused with a terminal state, which is merely when
      * the outcome of the game is certain regardless of future actions. It is possible for actions to be available in a
      * terminal state.
@@ -32,8 +28,8 @@ public interface VisibleState<SELF extends VisibleState<SELF, ACTION>, ACTION> e
     List<ACTION> validActions();
 
     /**
-     * @return A deep copy of this state object. Any data that changes over the course of a game must be independent of
-     * each other between the original and the copy. Immutable data may be shared.
+     * @return A copy of this state object. Any data that changes over the course of a game must be deep-copied; other
+     * data may be shared between the original and the copy.
      */
     SELF copy();
 }
