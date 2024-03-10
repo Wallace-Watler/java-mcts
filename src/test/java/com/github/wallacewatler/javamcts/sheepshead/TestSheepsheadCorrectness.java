@@ -1,7 +1,6 @@
 package com.github.wallacewatler.javamcts.sheepshead;
 
 import com.github.wallacewatler.javamcts.*;
-import io.github.wallacewatler.javamcts.*;
 
 import java.util.Arrays;
 import java.util.List;

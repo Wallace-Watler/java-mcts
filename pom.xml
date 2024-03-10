@@ -6,12 +6,18 @@
 
     <groupId>com.github.wallace-watler.java-mcts</groupId>
     <artifactId>java-mcts</artifactId>
-    <version>0.1.0-pre6</version>
+    <version>0.1.0-pre7</version>
     <packaging>jar</packaging>
+    <properties>
+        <maven.compiler.source>20</maven.compiler.source>
+        <maven.compiler.target>20</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
     <name>JavaMCTS</name>
+    <description>A Java library containing various implementations of MCTS.</description>
+    <url>https://github.com/Wallace-Watler/java-mcts</url>
     <inceptionYear>2024</inceptionYear>
-
     <licenses>
         <license>
             <name>The MIT License (MIT)</name>
@@ -19,10 +25,26 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+    <developers>
+        <developer>
+            <id>Wallace-Watler</id>
+            <name>Wallace Watler</name>
+            <email>watlerathome@gmail.com</email>
+            <roles>
+                <role>developer</role>
+            </roles>
+            <timezone>America/Chicago</timezone>
+        </developer>
+    </developers>
 
-    <properties>
-        <maven.compiler.source>20</maven.compiler.source>
-        <maven.compiler.target>20</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/Wallace-Watler/java-mcts/issues</url>
+    </issueManagement>
+    <scm>
+        <connection>scm:git:https://github.com/Wallace-Watler/java-mcts</connection>
+        <developerConnection>scm:git:https://github.com/Wallace-Watler/java-mcts</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/Wallace-Watler/java-mcts</url>
+    </scm>
 </project>

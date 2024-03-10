@@ -3,7 +3,6 @@ package com.github.wallacewatler.javamcts.sheepshead;
 import com.github.wallacewatler.javamcts.MOISMCTSTP;
 import com.github.wallacewatler.javamcts.SearchParameters;
 import com.github.wallacewatler.javamcts.UCT;
-import io.github.wallacewatler.javamcts.*;
 
 import java.util.*;
 import java.util.stream.IntStream;
