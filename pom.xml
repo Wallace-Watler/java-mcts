@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.github.wallace-watler.javamcts</groupId>
+    <groupId>com.github.wallace-watler.java-mcts</groupId>
     <artifactId>java-mcts</artifactId>
-    <version>0.1.0-pre5</version>
+    <version>0.1.0-pre6</version>
     <packaging>jar</packaging>
 
     <name>JavaMCTS</name>
@@ -25,20 +25,4 @@
         <maven.compiler.target>20</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-            <version>2.22.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>2.22.1</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
 </project>

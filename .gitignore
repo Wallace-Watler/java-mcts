@@ -1,6 +1,5 @@
 target/
-src/test/java/io/github/wallacewatler/javamcts/sleuth/
-src/test/prolog/
+src/test/java/com/github/wallacewatler/javamcts/sleuth/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
