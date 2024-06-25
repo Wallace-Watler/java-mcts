@@ -20,7 +20,6 @@ import java.util.Random;
  * @author Wallace Watler
  *
  * @see MCTSRP
- * @see MCTSRPT
  * @see MCTSTP
  */
 public interface MCTS {
@@ -44,7 +43,7 @@ public interface MCTS {
      * @see SearchParameters
      * @see SearchResults
      */
-    <STATE extends VisibleState<STATE, ? extends ACTION>, ACTION extends Action<STATE>>
+    <STATE extends VisibleState<STATE, ACTION>, ACTION extends Action<STATE>>
     SearchResults<ACTION> search(int numPlayers, STATE rootState, SearchParameters params, Random rand);
 
     /**

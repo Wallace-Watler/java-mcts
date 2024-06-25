@@ -52,7 +52,7 @@ public interface MOISMCTS {
      * @see SearchParameters
      * @see SearchResults
      */
-    <STATE extends State<? extends ACTION>, ACTION extends Action<STATE, ? extends MOVE>, MOVE extends Move<? extends ACTION>>
+    <STATE extends State<ACTION>, ACTION extends Action<STATE, MOVE>, MOVE extends Move<ACTION>>
     SearchResults<ACTION> search(int numPlayers, InfoSet<STATE, MOVE> infoSet, SearchParameters params, Random rand);
 
     /**

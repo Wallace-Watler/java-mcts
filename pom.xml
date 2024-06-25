@@ -6,7 +6,7 @@
 
     <groupId>com.github.wallace-watler.java-mcts</groupId>
     <artifactId>java-mcts</artifactId>
-    <version>0.1.0-pre7</version>
+    <version>0.1.0</version>
     <packaging>jar</packaging>
     <properties>
         <maven.compiler.source>20</maven.compiler.source>

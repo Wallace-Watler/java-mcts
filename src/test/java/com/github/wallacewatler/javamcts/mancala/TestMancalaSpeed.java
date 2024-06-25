@@ -10,10 +10,6 @@ final class TestMancalaSpeed {
         testItersPerMs(new MCTSRP(), 2);
         testItersPerMs(new MCTSRP(), 3);
         testItersPerMs(new MCTSRP(), 4);
-        testItersPerMs(new MCTSRPT(), 1);
-        testItersPerMs(new MCTSRPT(), 2);
-        testItersPerMs(new MCTSRPT(), 3);
-        testItersPerMs(new MCTSRPT(), 4);
         testItersPerMs(new MCTSTP(), 1);
         testItersPerMs(new MCTSTP(), 2);
         testItersPerMs(new MCTSTP(), 3);

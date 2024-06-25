@@ -2,9 +2,7 @@ package com.github.wallacewatler.javamcts;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 
 /**
  * MO-ISMCTS with root parallelization.
@@ -20,7 +18,7 @@ import java.util.stream.IntStream;
 public final class MOISMCTSRP implements MOISMCTS {
     @Override
     public
-    <STATE extends State<? extends ACTION>, ACTION extends Action<STATE, ? extends MOVE>, MOVE extends Move<? extends ACTION>>
+    <STATE extends State<ACTION>, ACTION extends Action<STATE, MOVE>, MOVE extends Move<ACTION>>
     SearchResults<ACTION> search(int numPlayers, InfoSet<STATE, MOVE> infoSet, SearchParameters params, Random rand) {
         if(numPlayers < 1)
             throw new IllegalArgumentException("numPlayers must be at least 1");
@@ -73,14 +71,14 @@ public final class MOISMCTSRP implements MOISMCTS {
     }
 
     private static
-    <STATE extends State<? extends ACTION>, ACTION extends Action<STATE, ? extends MOVE>, MOVE extends Move<? extends ACTION>>
+    <STATE extends State<ACTION>, ACTION extends Action<STATE, MOVE>, MOVE extends Move<ACTION>>
     int rootParallelSearch(InfoSet<STATE, MOVE> infoSet, ArrayList<Node> rootNodes, SearchParameters params, Random rand, long start) {
         long now = System.currentTimeMillis();
 
         // Pre-allocated list of nodes. The node at i is the current node in player i's tree.
         final ArrayList<Node> currentNodes = new ArrayList<>(rootNodes.size());
 
-        final Function<STATE, List<? extends MOVE>> stateValidMoves = state -> state.validActions().stream()
+        final Function<STATE, List<MOVE>> stateValidMoves = state -> state.validActions().stream()
                 .map(action -> action.observe(state.activePlayer()))
                 .toList();
 
@@ -96,16 +94,15 @@ public final class MOISMCTSRP implements MOISMCTS {
 
             // Choose a random determinized state consistent with the information set of the player searching the tree.
             STATE simulatedState = infoSet.determinize(rand);
-            List<? extends MOVE> validMoves = stateValidMoves.apply(simulatedState);
+            List<MOVE> validMoves = stateValidMoves.apply(simulatedState);
 
             // Selection and Expansion - Select child nodes using UCT, expanding where necessary.
             boolean continueSelection = true;
             while(simulatedState.scores() == null && continueSelection) {
-                final int activePlayer = simulatedState.activePlayer();
                 for(MOVE move : validMoves)
-                    activeNode.createChild(move);
+                    activeNode.createChildIfNotPresent(move);
 
-                final MOVE selectedMove = params.uct().selectBranch(activeNode, rand, activePlayer, validMoves);
+                final MOVE selectedMove = selectMove(activeNode, rand, validMoves, params.uct());
                 final ACTION selectedAction = selectedMove.asAction();
 
                 final Node selectedChild = activeNode.getChild(selectedMove);
@@ -119,7 +116,7 @@ public final class MOISMCTSRP implements MOISMCTS {
                 for(int pov = 0; pov < currentNodes.size(); pov++) {
                     final MOVE move = selectedAction.observe(pov);
                     final Node node = currentNodes.get(pov);
-                    node.createChild(move);
+                    node.createChildIfNotPresent(move);
                     final Node child = node.getChild(move);
                     currentNodes.set(pov, child);
                 }
@@ -139,13 +136,44 @@ public final class MOISMCTSRP implements MOISMCTS {
 
             // Backpropagation - Update all nodes that were selected with the results of simulation.
             final double[] scores = simulatedState.scores();
-            IntStream.range(0, currentNodes.size())
-                    .parallel()
-                    .forEach(pov -> currentNodes.get(pov).backPropagate(scores[pov]));
+            for(int pov = 0; pov < currentNodes.size(); pov++)
+                currentNodes.get(pov).backPropagate(scores[pov]);
 
             now = System.currentTimeMillis();
         }
         return iters;
+    }
+
+    private static
+    <STATE extends State<ACTION>, ACTION extends Action<STATE, MOVE>, MOVE extends Move<ACTION>>
+    MOVE selectMove(Node parent, Random rand, List<MOVE> moves, UCT uct) {
+        if(parent.visitCount == 0)
+            return moves.get(rand.nextInt(moves.size()));
+
+        final ArrayList<MOVE> maxMoves = new ArrayList<>();
+        double maxUctValue = Double.NEGATIVE_INFINITY;
+
+        for(MOVE move : moves) {
+            final Node child = parent.getChild(move);
+            final double uctValue;
+            if(child == null || child.availableCount == 0 || child.visitCount == 0) {
+                uctValue = uct.favorUnexplored() ? Double.POSITIVE_INFINITY : (parent.totalScore / parent.visitCount);
+            } else {
+                final double exploitation = child.totalScore / child.visitCount;
+                final double exploration = uct.explorationParam() * Math.sqrt(Math.log(child.availableCount) / child.visitCount);
+                uctValue = exploitation + exploration;
+            }
+
+            if(uctValue == maxUctValue) {
+                maxMoves.add(move);
+            } else if(uctValue > maxUctValue) {
+                maxUctValue = uctValue;
+                maxMoves.clear();
+                maxMoves.add(move);
+            }
+        }
+
+        return maxMoves.get(rand.nextInt(maxMoves.size()));
     }
 
     /**
@@ -153,8 +181,9 @@ public final class MOISMCTSRP implements MOISMCTS {
      * move leading from a node maps to a unique child node.
      */
     private static final class Node implements SearchNode<Object> {
-        private final Node parent;
         private final HashMap<Object, Node> children = new HashMap<>();
+        
+        private final Node parent;
 
         /** Number of times this node has been visited. */
         private int visitCount = 0;
@@ -164,8 +193,8 @@ public final class MOISMCTSRP implements MOISMCTS {
 
         /** Total score from going through this node. */
         private double totalScore = 0.0;
-
-        private Node(Node parent) {
+        
+        public Node(Node parent) {
             this.parent = parent;
         }
 
@@ -174,8 +203,7 @@ public final class MOISMCTSRP implements MOISMCTS {
             return children.get(move);
         }
 
-        @Override
-        public void createChild(Object move) {
+        public void createChildIfNotPresent(Object move) {
             if(children.get(move) == null)
                 children.put(move, new Node(this));
         }
@@ -183,21 +211,6 @@ public final class MOISMCTSRP implements MOISMCTS {
         @Override
         public int visitCount() {
             return visitCount;
-        }
-
-        @Override
-        public int availableCount() {
-            return availableCount;
-        }
-
-        @Override
-        public double totalScore(int activePlayer) {
-            return totalScore;
-        }
-
-        @Override
-        public ReadWriteLock statsLock() {
-            return DUMMY_LOCK;
         }
 
         private void backPropagate(double score) {
