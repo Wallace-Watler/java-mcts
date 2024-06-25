@@ -10,8 +10,8 @@ import java.util.Random;
  *     it can lead to one of many possible states. The revealing of hidden information can be treated as a random event.
  * </p>
  * <p>
- *     To use OLMCTS, you'll need to implement two interfaces: {@link VisibleState} and {@link Action}. You can then
- *     perform the search by calling {@link OLMCTS#search}.
+ *     To use {@code OLMCTS}, you'll need to implement two interfaces: {@link VisibleState} and {@link Action}. You can
+ *     then perform the search by calling {@link OLMCTS#search} on one of the provided {@code OLMCTS} implementations.
  * </p>
  *
  * @version 0.1.0

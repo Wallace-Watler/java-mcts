@@ -14,8 +14,9 @@ import java.util.Random;
  *     poker.
  * </p>
  * <p>
- *     To use MO-ISMCTS, you'll need to implement four interfaces: {@link State}, {@link Action}, {@link InfoSet}, and
- *     {@link Move}. You can then perform the search by calling {@link MOISMCTS#search}.
+ *     To use {@code MOISMCTS}, you'll need to implement four interfaces: {@link State}, {@link Action},
+ *     {@link InfoSet}, and {@link Move}. You can then perform the search by calling {@link MOISMCTS#search} on one of
+ *     the provided {@code MOISMCTS} implementations.
  * </p>
  *
  * @version 0.1.0

@@ -13,6 +13,7 @@ import java.util.concurrent.locks.ReadWriteLock;
  * @author Wallace Watler
  *
  * @see MCTS
+ * @see MCTSRPT
  * @see MCTSTP
  */
 public final class MCTSRP implements MCTS {
@@ -36,14 +37,13 @@ public final class MCTSRP implements MCTS {
         for(int i = 0; i < params.threadCount(); i++)
             rootNodes.add(new Node<>(numPlayers, rootState, null));
 
-        // Start parallel searches. The main thread does one of them.
-        final Thread[] workers = new Thread[params.threadCount() - 1];
+        // Start parallel searches.
+        final Thread[] workers = new Thread[params.threadCount()];
         for(int workerNum = 0; workerNum < workers.length; workerNum++) {
-            final Node<STATE, ACTION> rootNode = rootNodes.get(workerNum + 1);
+            final Node<STATE, ACTION> rootNode = rootNodes.get(workerNum);
             workers[workerNum] = new Thread(() -> totalIters.getAndAdd(rootParallelSearch(rootNode, params, rand, start)), "mctsrp" + workerNum);
             workers[workerNum].start();
         }
-        totalIters.getAndAdd(rootParallelSearch(rootNodes.get(0), params, rand, start));
 
         // Wait for all threads to finish
         try {

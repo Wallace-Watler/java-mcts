@@ -4,13 +4,14 @@ import com.github.wallacewatler.javamcts.*;
 
 import java.util.Random;
 
-public final class TestMancalaCorrectness {
+final class TestMancalaCorrectness {
     public static void main(String[] args) {
-        testMCTS(new MCTSRP());
-        testMCTS(new MCTSTP());
+        test(new MCTSRP());
+        test(new MCTSRPT());
+        test(new MCTSTP());
     }
 
-    private static void testMCTS(MCTS mcts) {
+    private static void test(MCTS mcts) {
         final MancalaState rootState = new MancalaState();
 
         final UCT uct = new UCT(Math.sqrt(2), true);

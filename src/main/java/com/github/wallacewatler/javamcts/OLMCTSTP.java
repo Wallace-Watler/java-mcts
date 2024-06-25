@@ -35,13 +35,12 @@ public final class OLMCTSTP implements OLMCTS {
         final Semaphore iterAllowance = new Semaphore(params.maxIters());
         // -------------------------------
 
-        // Start parallel searches. The main thread does one of them.
-        final Thread[] workers = new Thread[params.threadCount() - 1];
+        // Start parallel searches.
+        final Thread[] workers = new Thread[params.threadCount()];
         for(int workerNum = 0; workerNum < workers.length; workerNum++) {
             workers[workerNum] = new Thread(() -> treeParallelSearch(rootState, rootNode, params, rand, iterAllowance, iters, start), "olmctstp" + workerNum);
             workers[workerNum].start();
         }
-        treeParallelSearch(rootState, rootNode, params, rand, iterAllowance, iters, start);
 
         // Wait for all threads to finish
         try {
@@ -160,12 +159,14 @@ public final class OLMCTSTP implements OLMCTS {
             return statsLock;
         }
 
+        @SuppressWarnings("NonAtomicOperationOnVolatileField")
         private void incAvailableCount() {
             statsLock.writeLock().lock();
             availableCount++;
             statsLock.writeLock().unlock();
         }
 
+        @SuppressWarnings("NonAtomicOperationOnVolatileField")
         private void backPropagate(double[] scores) {
             statsLock.writeLock().lock();
             visitCount++;

@@ -7,7 +7,7 @@ import com.github.wallacewatler.javamcts.SearchParameters;
 import java.util.Random;
 import java.util.Scanner;
 
-public final class TestMancalaIntelligence {
+final class TestMancalaIntelligence {
     public static void main(String[] args) {
         final MancalaState rootState = new MancalaState();
 

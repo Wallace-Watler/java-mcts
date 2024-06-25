@@ -43,14 +43,13 @@ public final class MOISMCTSRP implements MOISMCTS {
             trees.add(rootNodes);
         }
 
-        // Start parallel searches. The main thread does one of them.
-        final Thread[] workers = new Thread[params.threadCount() - 1];
+        // Start parallel searches.
+        final Thread[] workers = new Thread[params.threadCount()];
         for(int workerNum = 0; workerNum < workers.length; workerNum++) {
-            final ArrayList<Node> tree = trees.get(workerNum + 1);
+            final ArrayList<Node> tree = trees.get(workerNum);
             workers[workerNum] = new Thread(() -> totalIters.addAndGet(rootParallelSearch(infoSet, tree, params, rand, start)), "moismctsrp" + workerNum);
             workers[workerNum].start();
         }
-        totalIters.addAndGet(rootParallelSearch(infoSet, trees.get(0), params, rand, start));
 
         // Wait for all threads to finish
         try {

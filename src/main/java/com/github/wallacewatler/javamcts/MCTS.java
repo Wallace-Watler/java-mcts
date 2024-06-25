@@ -10,8 +10,8 @@ import java.util.Random;
  *     games in this category are Tic-Tac-Toe, chess, and mancala.
  * </p>
  * <p>
- *     To use MCTS, you'll need to implement two interfaces: {@link VisibleState} and {@link Action}. You can then
- *     perform the search by calling {@link MCTS#search}.
+ *     To use {@code MCTS}, you'll need to implement two interfaces: {@link VisibleState} and {@link Action}. You can
+ *     then perform the search by calling {@link MCTS#search} on one of the provided {@code MCTS} implementations.
  * </p>
  *
  * @version 0.1.0
@@ -20,6 +20,7 @@ import java.util.Random;
  * @author Wallace Watler
  *
  * @see MCTSRP
+ * @see MCTSRPT
  * @see MCTSTP
  */
 public interface MCTS {

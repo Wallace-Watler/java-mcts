@@ -4,22 +4,27 @@ import com.github.wallacewatler.javamcts.*;
 
 import java.util.Random;
 
-public final class TestMancalaSpeed {
+final class TestMancalaSpeed {
     public static void main(String[] args) {
-        testItersPerMsMCTS(new MCTSRP(), 1);
-        testItersPerMsMCTS(new MCTSRP(), 2);
-        testItersPerMsMCTS(new MCTSRP(), 3);
-        testItersPerMsMCTS(new MCTSRP(), 4);
-        testItersPerMsMCTS(new MCTSTP(), 1);
-        testItersPerMsMCTS(new MCTSTP(), 2);
-        testItersPerMsMCTS(new MCTSTP(), 3);
-        testItersPerMsMCTS(new MCTSTP(), 4);
+        testItersPerMs(new MCTSRP(), 1);
+        testItersPerMs(new MCTSRP(), 2);
+        testItersPerMs(new MCTSRP(), 3);
+        testItersPerMs(new MCTSRP(), 4);
+        testItersPerMs(new MCTSRPT(), 1);
+        testItersPerMs(new MCTSRPT(), 2);
+        testItersPerMs(new MCTSRPT(), 3);
+        testItersPerMs(new MCTSRPT(), 4);
+        testItersPerMs(new MCTSTP(), 1);
+        testItersPerMs(new MCTSTP(), 2);
+        testItersPerMs(new MCTSTP(), 3);
+        testItersPerMs(new MCTSTP(), 4);
     }
 
-    private static void testItersPerMsMCTS(MCTS mcts, int threadCount) {
+    private static void testItersPerMs(MCTS mcts, int threadCount) {
         final Sampler itersPerMs = new Sampler();
+        final int numSamples = 30;
 
-        for(int i = 0; i < 30; i++) {
+        for(int i = 0; i < numSamples; i++) {
             final MancalaState rootState = new MancalaState();
             final UCT uct = new UCT(Math.sqrt(2), true);
             final SearchParameters params = new SearchParameters(0, 100, Integer.MAX_VALUE, uct, threadCount);

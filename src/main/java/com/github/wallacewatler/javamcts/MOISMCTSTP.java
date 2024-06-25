@@ -41,13 +41,12 @@ public final class MOISMCTSTP implements MOISMCTS {
             rootNodes.add(new Node(null));
         // -------------------------------
 
-        // Start parallel searches. The main thread does one of them.
-        final Thread[] workers = new Thread[params.threadCount() - 1];
+        // Start parallel searches.
+        final Thread[] workers = new Thread[params.threadCount()];
         for(int workerNum = 0; workerNum < workers.length; workerNum++) {
             workers[workerNum] = new Thread(() -> treeParallelSearch(infoSet, rootNodes, params, rand, iterAllowance, iters, start), "moismctstp" + workerNum);
             workers[workerNum].start();
         }
-        treeParallelSearch(infoSet, rootNodes, params, rand, iterAllowance, iters, start);
 
         // Wait for all threads to finish
         try {
@@ -193,12 +192,14 @@ public final class MOISMCTSTP implements MOISMCTS {
             return statsLock;
         }
 
+        @SuppressWarnings("NonAtomicOperationOnVolatileField")
         private void incAvailableCount() {
             statsLock.writeLock().lock();
             availableCount++;
             statsLock.writeLock().unlock();
         }
 
+        @SuppressWarnings("NonAtomicOperationOnVolatileField")
         private void backPropagate(double score) {
             statsLock.writeLock().lock();
             visitCount++;

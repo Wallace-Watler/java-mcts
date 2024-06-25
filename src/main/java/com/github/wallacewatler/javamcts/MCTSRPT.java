@@ -1,14 +1,11 @@
 package com.github.wallacewatler.javamcts;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Closed loop MCTS with tree parallelization.
+ * Closed loop MCTS with root parallelization and transposition table.
  *
  * @version 0.1.0
  * @since 0.1.0
@@ -17,29 +14,34 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @see MCTS
  * @see MCTSRP
+ * @see MCTSTP
  */
-public final class MCTSTP implements MCTS {
+public final class MCTSRPT implements MCTS {
     @Override
     public
-    <STATE extends VisibleState<STATE, ? extends ACTION>, ACTION extends MCTS.Action<STATE>>
+    <STATE extends VisibleState<STATE, ? extends ACTION>, ACTION extends Action<STATE>>
     SearchResults<ACTION> search(int numPlayers, STATE rootState, SearchParameters params, Random rand) {
         if(numPlayers < 1)
             throw new IllegalArgumentException("numPlayers must be at least 1");
 
+        if(rootState.validActions().isEmpty())
+            return new SearchResults<>(null, 0, 0);
+
         // These are shared across threads
         final long start = System.currentTimeMillis();
-        final AtomicInteger iters = new AtomicInteger();
-        final Semaphore iterAllowance = new Semaphore(params.maxIters());
-        final Node<STATE, ACTION> rootNode = new Node<>(numPlayers, rootState, null);
+        final AtomicInteger totalIters = new AtomicInteger();
         // -------------------------------
 
-        if(rootNode.validActions.isEmpty())
-            return new SearchResults<>(null, 0, 0);
+        // One search tree for each thread
+        final ArrayList<Node<STATE, ACTION>> rootNodes = new ArrayList<>(params.threadCount());
+        for(int i = 0; i < params.threadCount(); i++)
+            rootNodes.add(new Node<>(numPlayers, rootState, null));
 
         // Start parallel searches.
         final Thread[] workers = new Thread[params.threadCount()];
         for(int workerNum = 0; workerNum < workers.length; workerNum++) {
-            workers[workerNum] = new Thread(() -> treeParallelSearch(rootNode, params, rand, iterAllowance, iters, start), "mctstp" + workerNum);
+            final Node<STATE, ACTION> rootNode = rootNodes.get(workerNum);
+            workers[workerNum] = new Thread(() -> totalIters.getAndAdd(rootParallelSearch(rootNode, params, rand, start)), "mctsrp" + workerNum);
             workers[workerNum].start();
         }
 
@@ -52,19 +54,25 @@ public final class MCTSTP implements MCTS {
                 worker.interrupt();
         }
 
-        // Recommend the most selected action.
-        final double itersPerThread = (double) iters.get() / params.threadCount();
-        final ACTION bestAction = SearchNode.mostVisited(rootNode, rootNode.validActions, rand);
+        // Recommend the most selected action by majority voting.
+        final HashMap<ACTION, Integer> votes = new HashMap<>();
+        for(Node<STATE, ACTION> node : rootNodes) {
+            final ACTION action = SearchNode.mostVisited(node, node.validActions, rand);
+            votes.put(action, votes.getOrDefault(action, 0) + 1);
+        }
+        final ACTION bestAction = votes.entrySet().stream().max(Comparator.comparingInt(Map.Entry::getValue)).get().getKey();
+        final double itersPerThread = (double) totalIters.get() / params.threadCount();
         return new SearchResults<>(bestAction, itersPerThread, System.currentTimeMillis() - start);
     }
 
     private static
-    <STATE extends VisibleState<STATE, ? extends ACTION>, ACTION extends MCTS.Action<STATE>>
-    void treeParallelSearch(Node<STATE, ACTION> rootNode, SearchParameters params, Random rand, Semaphore iterAllowance, AtomicInteger iters, long start) {
+    <STATE extends VisibleState<STATE, ? extends ACTION>, ACTION extends Action<STATE>>
+    int rootParallelSearch(Node<STATE, ACTION> rootNode, SearchParameters params, Random rand, long start) {
         long now = System.currentTimeMillis();
 
-        while(!Thread.interrupted() && now - start <= params.maxTime() && (now - start < params.minTime() || iterAllowance.tryAcquire())) {
-            iters.getAndIncrement();
+        int iters = 0;
+        while(!Thread.interrupted() && now - start <= params.maxTime() && (now - start < params.minTime() || iters < params.maxIters())) {
+            iters++;
 
             Node<STATE, ACTION> currentNode = rootNode;
 
@@ -93,17 +101,16 @@ public final class MCTSTP implements MCTS {
 
             now = System.currentTimeMillis();
         }
+        return iters;
     }
 
     /**
-     * A node in an MCTS-TP search tree. The tree is structured such that each node stores a game state, and each action
-     * leading from a node maps to a unique child node. Locks are used to prevent data corruption from simultaneous
-     * reads and writes.
+     * A node in an MCTS-RP search tree. The tree is structured such that each node stores a game state, and each action
+     * leading from a node maps to a unique child node.
      */
-    private static final class Node<STATE extends VisibleState<STATE, ? extends ACTION>, ACTION extends MCTS.Action<STATE>> implements SearchNode<ACTION> {
-        private final ReentrantReadWriteLock statsLock = new ReentrantReadWriteLock();
+    private static final class Node<STATE extends VisibleState<STATE, ? extends ACTION>, ACTION extends Action<STATE>> implements SearchNode<ACTION> {
         private final Node<STATE, ACTION> parent;
-        private final ConcurrentHashMap<ACTION, Node<STATE, ACTION>> children;
+        private final HashMap<ACTION, Node<STATE, ACTION>> children;
         private final STATE state;
 
         /** Cached {@code state.validActions()}. */
@@ -113,7 +120,10 @@ public final class MCTSTP implements MCTS {
         private final double[] scores;
 
         /** Number of times this node has been visited. */
-        private volatile int visitCount = 0;
+        private int visitCount = 0;
+
+        /** Number of times each action has been taken from this node. */
+        private final HashMap<ACTION, Integer> actionCounts;
 
         /** Total score that each player obtains by going through this node. */
         private final double[] totalScores;
@@ -124,7 +134,9 @@ public final class MCTSTP implements MCTS {
             validActions = state.validActions();
             scores = state.scores();
             totalScores = new double[numPlayers];
-            children = new ConcurrentHashMap<>(validActions.size());
+
+            children = new HashMap<>(validActions.size());
+            actionCounts = new HashMap<>(validActions.size());
         }
 
         @Override
@@ -133,8 +145,8 @@ public final class MCTSTP implements MCTS {
         }
 
         @Override
-        public synchronized void createChild(ACTION action) {
-            if(!children.containsKey(action)) {
+        public void createChild(ACTION action) {
+            if(children.get(action) == null) {
                 final STATE state = action.applyToState(this.state.copy());
                 children.put(action, new Node<>(totalScores.length, state, this));
             }
@@ -157,17 +169,13 @@ public final class MCTSTP implements MCTS {
 
         @Override
         public ReadWriteLock statsLock() {
-            return statsLock;
+            return DUMMY_LOCK;
         }
 
-        @SuppressWarnings("NonAtomicOperationOnVolatileField")
         private void backPropagate(double[] scores) {
-            statsLock.writeLock().lock();
             visitCount++;
             for(int i = 0; i < scores.length; i++)
                 totalScores[i] += scores[i];
-
-            statsLock.writeLock().unlock();
 
             if(parent != null)
                 parent.backPropagate(scores);
@@ -184,6 +192,6 @@ public final class MCTSTP implements MCTS {
 
     @Override
     public String toString() {
-        return "MCTS-TP";
+        return "MCTS-RP-T";
     }
 }

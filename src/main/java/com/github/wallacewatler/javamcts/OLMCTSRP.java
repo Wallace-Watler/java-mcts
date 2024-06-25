@@ -37,14 +37,13 @@ public final class OLMCTSRP implements OLMCTS {
         for(int i = 0; i < params.threadCount(); i++)
             rootNodes.add(new Node(numPlayers, null));
 
-        // Start parallel searches. The main thread does one of them.
-        final Thread[] workers = new Thread[params.threadCount() - 1];
+        // Start parallel searches.
+        final Thread[] workers = new Thread[params.threadCount()];
         for(int workerNum = 0; workerNum < workers.length; workerNum++) {
-            final Node rootNode = rootNodes.get(workerNum + 1);
+            final Node rootNode = rootNodes.get(workerNum);
             workers[workerNum] = new Thread(() -> totalIters.addAndGet(rootParallelSearch(rootState, rootNode, params, rand, start)), "olmctsrp" + workerNum);
             workers[workerNum].start();
         }
-        totalIters.addAndGet(rootParallelSearch(rootState, rootNodes.get(0), params, rand, start));
 
         // Wait for all threads to finish
         try {
