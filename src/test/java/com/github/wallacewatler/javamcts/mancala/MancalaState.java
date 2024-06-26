@@ -4,6 +4,7 @@ import com.github.wallacewatler.javamcts.VisibleState;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.IntStream;
 
 public final class MancalaState implements VisibleState<MancalaState, ChooseHole> {
@@ -70,5 +71,20 @@ public final class MancalaState implements VisibleState<MancalaState, ChooseHole
     @Override
     public MancalaState copy() {
         return new MancalaState(this);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        MancalaState that = (MancalaState) o;
+        return activePlayer == that.activePlayer && Arrays.equals(holes, that.holes);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(activePlayer);
+        result = 31 * result + Arrays.hashCode(holes);
+        return result;
     }
 }

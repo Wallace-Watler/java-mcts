@@ -1,15 +1,12 @@
 package com.github.wallacewatler.javamcts;
 
 /**
+ * Moves are actions as seen from the viewpoint of a specific player. Since other players' actions may be partially or
+ * completely hidden, it is possible for multiple different actions to map to the same move. A player will always have
+ * full view of their own actions, so the corresponding moves map one-to-one and are said to be singletons.
  * <p>
- *     Moves are actions as seen from the viewpoint of a specific player. Since other players' actions may be partially
- *     or completely hidden, it is possible for multiple different actions to map to the same move. A player will always
- *     have full view of their own actions, so the corresponding moves map one-to-one and are said to be singletons.
- * </p>
- * <p>
- *     Implementations of {@code Move} should include {@link Object#equals} and {@link Object#hashCode} since moves are
- *     internally used as keys in hashmaps.
- * </p>
+ * Implementations of {@code Move} should include {@link Object#equals} and {@link Object#hashCode} since moves are
+ * internally used as keys in hashmaps.
  *
  * @version 0.1.0
  * @since 0.1.0

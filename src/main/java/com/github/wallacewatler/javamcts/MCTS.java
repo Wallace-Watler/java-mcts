@@ -4,15 +4,12 @@ import java.util.Random;
 
 /**
  * <h3>Closed Loop Monte Carlo tree search</h3>
+ * This is classic MCTS, effective on deterministic games of perfect information. The entire game state and all players'
+ * actions are visible to everyone, and every action has a pre-determined effect on the state. Examples of games in this
+ * category are Tic-Tac-Toe, chess, and mancala.
  * <p>
- *     This is classic MCTS, effective on deterministic games of perfect information. The entire game state and all
- *     players' actions are visible to everyone, and every action has a pre-determined effect on the state. Examples of
- *     games in this category are Tic-Tac-Toe, chess, and mancala.
- * </p>
- * <p>
- *     To use {@code MCTS}, you'll need to implement two interfaces: {@link VisibleState} and {@link Action}. You can
- *     then perform the search by calling {@link MCTS#search} on one of the provided {@code MCTS} implementations.
- * </p>
+ * To use {@code MCTS}, you'll need to implement two interfaces: {@link VisibleState} and {@link Action}. You can then
+ * perform the search by calling {@link MCTS#search} on one of the provided {@code MCTS} implementations.
  *
  * @version 0.1.0
  * @since 0.1.0
@@ -27,11 +24,15 @@ public interface MCTS {
      * Perform MCTS from a given state. {@code rootState} must have valid actions to perform the search. {@code rand} is
      * only used for the algorithm itself, not for any game mechanics. {@code rand} can be seeded to reproduce
      * single-threaded runs from a particular state. The tree is discarded once search is complete.
+     * <p>
+     * If a transposition table is used, the {@code STATE} type should have {@link Object#equals} and
+     * {@link Object#hashCode} defined as its objects will be used as keys in a {@link java.util.HashMap HashMap}.
      *
      * @param numPlayers the number of players in the game
-     * @param rootState the state from which to begin search
+     * @param rootState the state from which to begin the search
      * @param params the search parameters
      * @param rand a source of randomness
+     * @param useTTable whether to use a transposition table during the search
      *
      * @return The search results.
      *
@@ -44,7 +45,7 @@ public interface MCTS {
      * @see SearchResults
      */
     <STATE extends VisibleState<STATE, ACTION>, ACTION extends Action<STATE>>
-    SearchResults<ACTION> search(int numPlayers, STATE rootState, SearchParameters params, Random rand);
+    SearchResults<ACTION> search(int numPlayers, STATE rootState, SearchParameters params, Random rand, boolean useTTable);
 
     /**
      * <p>

@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -28,7 +29,7 @@ public final class MOISMCTSTP implements MOISMCTS {
             throw new IllegalArgumentException("numPlayers must be at least 1");
 
         if(infoSet.validMoves().isEmpty())
-            return new SearchResults<>(null, 0, 0);
+            return new SearchResults<>(null, 0, 0, 1, 1);
 
         // These are shared across threads
         final long start = System.currentTimeMillis();
@@ -60,7 +61,7 @@ public final class MOISMCTSTP implements MOISMCTS {
         final Node rootNode = rootNodes.get(infoSet.owner());
         final MOVE bestMove = SearchNode.mostVisited(rootNode, infoSet.validMoves(), rand);
         final double itersPerThread = (double) iters.get() / params.threadCount();
-        return new SearchResults<>(bestMove.asAction(), itersPerThread, System.currentTimeMillis() - start);
+        return new SearchResults<>(bestMove.asAction(), itersPerThread, System.currentTimeMillis() - start, rootNode.numNodes(), 0);
     }
 
     private static
@@ -94,7 +95,7 @@ public final class MOISMCTSTP implements MOISMCTS {
                 for(MOVE move : validMoves)
                     activeNode.createChildIfNotPresent(move);
 
-                final MOVE selectedMove = selectMove(activeNode, rand, validMoves, params.uct());
+                final MOVE selectedMove = SearchNode.selectBranch(activeNode, validMoves, simulatedState.activePlayer(), params.uct(), rand);
                 final Node selectedChild = activeNode.getChild(selectedMove);
                 if(selectedChild.visitCount == 0)
                     continueSelection = false;
@@ -136,42 +137,6 @@ public final class MOISMCTSTP implements MOISMCTS {
         }
     }
 
-    private static
-    <STATE extends State<ACTION>, ACTION extends Action<STATE, MOVE>, MOVE extends Move<ACTION>>
-    MOVE selectMove(Node parent, Random rand, List<MOVE> moves, UCT uct) {
-        if(parent.visitCount == 0)
-            return moves.get(rand.nextInt(moves.size()));
-
-        final ArrayList<MOVE> maxMoves = new ArrayList<>();
-        double maxUctValue = Double.NEGATIVE_INFINITY;
-
-        parent.statsLock.readLock().lock();
-        for(MOVE move : moves) {
-            final Node child = parent.getChild(move);
-            final double uctValue;
-            if(child == null || child.availableCount == 0 || child.visitCount == 0) {
-                uctValue = uct.favorUnexplored() ? Double.POSITIVE_INFINITY : (parent.totalScore / parent.visitCount);
-            } else {
-                child.statsLock.readLock().lock();
-                final double exploitation = child.totalScore / child.visitCount();
-                final double exploration = uct.explorationParam() * Math.sqrt(Math.log(child.availableCount) / child.visitCount);
-                child.statsLock.readLock().unlock();
-                uctValue = exploitation + exploration;
-            }
-
-            if(uctValue == maxUctValue) {
-                maxMoves.add(move);
-            } else if(uctValue > maxUctValue) {
-                maxUctValue = uctValue;
-                maxMoves.clear();
-                maxMoves.add(move);
-            }
-        }
-        parent.statsLock.readLock().unlock();
-
-        return maxMoves.get(rand.nextInt(maxMoves.size()));
-    }
-
     /**
      * A node in an MO-ISMCTS-TP search tree. A node represents a sequence of moves from the beginning of the game. Each
      * move leading from a node maps to a unique child node.
@@ -195,18 +160,38 @@ public final class MOISMCTSTP implements MOISMCTS {
         }
 
         @Override
+        public int visitCount() {
+            return visitCount;
+        }
+
+        @Override
+        public double totalScore(int activePlayer) {
+            return totalScore;
+        }
+
+        @Override
         public Node getChild(Object move) {
             return children.get(move);
+        }
+
+        @Override
+        public int selectCount(Object move) {
+            return getChild(move).visitCount;
+        }
+
+        @Override
+        public int availableCount(Object move) {
+            return getChild(move).availableCount;
+        }
+
+        @Override
+        public ReadWriteLock statsLock() {
+            return statsLock;
         }
 
         public synchronized void createChildIfNotPresent(Object move) {
             if(!children.containsKey(move))
                 children.put(move, new Node(this));
-        }
-
-        @Override
-        public int visitCount() {
-            return visitCount;
         }
 
         @SuppressWarnings("NonAtomicOperationOnVolatileField")
@@ -225,6 +210,14 @@ public final class MOISMCTSTP implements MOISMCTS {
 
             if(parent != null)
                 parent.backPropagate(score);
+        }
+
+        public int numNodes() {
+            int num = 1;
+            for(Node child : children.values())
+                num += child.numNodes();
+
+            return num;
         }
 
         @Override

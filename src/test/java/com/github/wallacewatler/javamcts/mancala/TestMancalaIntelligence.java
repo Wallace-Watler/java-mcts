@@ -30,7 +30,7 @@ final class TestMancalaIntelligence {
                     System.out.println("Hole " + action.hole() + " can't be selected.");
                 } while(true);
             } else {
-                action = new MCTSRP().search(2, rootState, params, new Random()).bestAction();
+                action = new MCTSRP().search(2, rootState, params, new Random(), true).bestAction();
             }
 
             action.applyToState(rootState);

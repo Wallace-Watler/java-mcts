@@ -4,20 +4,16 @@ import java.util.Random;
 
 /**
  * <h3>Multiple-observer information set Monte Carlo tree search (MO-ISMCTS)</h3>
+ * MO-ISMCTS is effective on games of imperfect information, where knowledge of the game state can vary between players.
+ * Each player maintains an information set that represents this knowledge. Furthermore, players do not observe other
+ * players' actions directly since certain aspects of those actions may be hidden. Instead, players observe moves, which
+ * are equivalence classes on actions. It is assumed that every player has full view of their own actions. Simultaneous
+ * actions can be modeled as sequential actions that are hidden from all other players until some event reveals them at
+ * once. Examples of games that MO-ISMCTS can handle are hearts, cribbage, and poker.
  * <p>
- *     MO-ISMCTS is effective on games of imperfect information, where knowledge of the game state can vary between
- *     players. Each player maintains an information set that represents this knowledge. Furthermore, players do not
- *     observe other players' actions directly since certain aspects of those actions may be hidden. Instead, players
- *     observe moves, which are equivalence classes on actions. It is assumed that every player has full view of their
- *     own actions. Simultaneous actions can be modeled as sequential actions that are hidden from all other players
- *     until some event reveals them at once. Examples of games that MO-ISMCTS can handle are hearts, cribbage, and
- *     poker.
- * </p>
- * <p>
- *     To use {@code MOISMCTS}, you'll need to implement four interfaces: {@link State}, {@link Action},
- *     {@link InfoSet}, and {@link Move}. You can then perform the search by calling {@link MOISMCTS#search} on one of
- *     the provided {@code MOISMCTS} implementations.
- * </p>
+ * To use {@code MOISMCTS}, you'll need to implement four interfaces: {@link State}, {@link Action}, {@link InfoSet},
+ * and {@link Move}. You can then perform the search by calling {@link MOISMCTS#search} on one of the provided
+ * {@code MOISMCTS} implementations.
  *
  * @version 0.1.0
  * @since 0.1.0

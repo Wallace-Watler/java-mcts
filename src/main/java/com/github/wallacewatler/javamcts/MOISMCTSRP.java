@@ -2,6 +2,7 @@ package com.github.wallacewatler.javamcts;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Function;
 
 /**
@@ -24,7 +25,7 @@ public final class MOISMCTSRP implements MOISMCTS {
             throw new IllegalArgumentException("numPlayers must be at least 1");
 
         if(infoSet.validMoves().isEmpty())
-            return new SearchResults<>(null, 0, 0);
+            return new SearchResults<>(null, 0, 0, 1, 1);
 
         // These are shared across threads
         final long start = System.currentTimeMillis();
@@ -60,14 +61,16 @@ public final class MOISMCTSRP implements MOISMCTS {
 
         // Recommend the most selected action by majority voting.
         final HashMap<MOVE, Integer> votes = new HashMap<>();
+        int numNodes = 0;
         for(ArrayList<Node> rootNodes : trees) {
-            final Node rootNode = rootNodes.get(infoSet.owner());
-            final MOVE action = SearchNode.mostVisited(rootNode, infoSet.validMoves(), rand);
+            final Node root = rootNodes.get(infoSet.owner());
+            final MOVE action = SearchNode.mostVisited(root, infoSet.validMoves(), rand);
             votes.put(action, votes.getOrDefault(action, 0) + 1);
+            numNodes += root.numNodes();
         }
         final ACTION bestAction = votes.entrySet().stream().max(Comparator.comparingInt(Map.Entry::getValue)).get().getKey().asAction();
         final double itersPerThread = (double) totalIters.get() / params.threadCount();
-        return new SearchResults<>(bestAction, itersPerThread, System.currentTimeMillis() - start);
+        return new SearchResults<>(bestAction, itersPerThread, System.currentTimeMillis() - start, numNodes, 0);
     }
 
     private static
@@ -102,7 +105,7 @@ public final class MOISMCTSRP implements MOISMCTS {
                 for(MOVE move : validMoves)
                     activeNode.createChildIfNotPresent(move);
 
-                final MOVE selectedMove = selectMove(activeNode, rand, validMoves, params.uct());
+                final MOVE selectedMove = SearchNode.selectBranch(activeNode, validMoves, simulatedState.activePlayer(), params.uct(), rand);
                 final ACTION selectedAction = selectedMove.asAction();
 
                 final Node selectedChild = activeNode.getChild(selectedMove);
@@ -144,38 +147,6 @@ public final class MOISMCTSRP implements MOISMCTS {
         return iters;
     }
 
-    private static
-    <STATE extends State<ACTION>, ACTION extends Action<STATE, MOVE>, MOVE extends Move<ACTION>>
-    MOVE selectMove(Node parent, Random rand, List<MOVE> moves, UCT uct) {
-        if(parent.visitCount == 0)
-            return moves.get(rand.nextInt(moves.size()));
-
-        final ArrayList<MOVE> maxMoves = new ArrayList<>();
-        double maxUctValue = Double.NEGATIVE_INFINITY;
-
-        for(MOVE move : moves) {
-            final Node child = parent.getChild(move);
-            final double uctValue;
-            if(child == null || child.availableCount == 0 || child.visitCount == 0) {
-                uctValue = uct.favorUnexplored() ? Double.POSITIVE_INFINITY : (parent.totalScore / parent.visitCount);
-            } else {
-                final double exploitation = child.totalScore / child.visitCount;
-                final double exploration = uct.explorationParam() * Math.sqrt(Math.log(child.availableCount) / child.visitCount);
-                uctValue = exploitation + exploration;
-            }
-
-            if(uctValue == maxUctValue) {
-                maxMoves.add(move);
-            } else if(uctValue > maxUctValue) {
-                maxUctValue = uctValue;
-                maxMoves.clear();
-                maxMoves.add(move);
-            }
-        }
-
-        return maxMoves.get(rand.nextInt(maxMoves.size()));
-    }
-
     /**
      * A node in an MO-ISMCTS-RP search tree. A node represents a sequence of moves from the beginning of the game. Each
      * move leading from a node maps to a unique child node.
@@ -199,8 +170,33 @@ public final class MOISMCTSRP implements MOISMCTS {
         }
 
         @Override
+        public int visitCount() {
+            return visitCount;
+        }
+
+        @Override
+        public double totalScore(int activePlayer) {
+            return totalScore;
+        }
+
+        @Override
         public Node getChild(Object move) {
             return children.get(move);
+        }
+
+        @Override
+        public int selectCount(Object move) {
+            return getChild(move).visitCount;
+        }
+
+        @Override
+        public int availableCount(Object move) {
+            return getChild(move).availableCount;
+        }
+
+        @Override
+        public ReadWriteLock statsLock() {
+            return DUMMY_LOCK;
         }
 
         public void createChildIfNotPresent(Object move) {
@@ -208,17 +204,19 @@ public final class MOISMCTSRP implements MOISMCTS {
                 children.put(move, new Node(this));
         }
 
-        @Override
-        public int visitCount() {
-            return visitCount;
-        }
-
         private void backPropagate(double score) {
             visitCount++;
             totalScore += score;
-
             if(parent != null)
                 parent.backPropagate(score);
+        }
+
+        public int numNodes() {
+            int num = 1;
+            for(Node child : children.values())
+                num += child.numNodes();
+
+            return num;
         }
 
         @Override

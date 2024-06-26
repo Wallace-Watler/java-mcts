@@ -2,6 +2,7 @@ package com.github.wallacewatler.javamcts;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * Closed loop MCTS with root parallelization.
@@ -18,16 +19,17 @@ public final class MCTSRP implements MCTS {
     @Override
     public
     <STATE extends VisibleState<STATE, ACTION>, ACTION extends MCTS.Action<STATE>>
-    SearchResults<ACTION> search(int numPlayers, STATE rootState, SearchParameters params, Random rand) {
+    SearchResults<ACTION> search(int numPlayers, STATE rootState, SearchParameters params, Random rand, boolean useTTable) {
         if(numPlayers < 1)
             throw new IllegalArgumentException("numPlayers must be at least 1");
 
         if(rootState.validActions().isEmpty())
-            return new SearchResults<>(null, 0, 0);
+            return new SearchResults<>(null, 0, 0, 1, 1);
 
         // These are shared across threads
         final long start = System.currentTimeMillis();
         final AtomicInteger totalIters = new AtomicInteger();
+        final AtomicInteger numStates = new AtomicInteger();
         // -------------------------------
 
         // One search tree for each thread
@@ -39,7 +41,7 @@ public final class MCTSRP implements MCTS {
         final Thread[] workers = new Thread[params.threadCount()];
         for(int workerNum = 0; workerNum < workers.length; workerNum++) {
             final Node<STATE, ACTION> rootNode = rootNodes.get(workerNum);
-            workers[workerNum] = new Thread(() -> totalIters.getAndAdd(rootParallelSearch(rootNode, params, rand, start)), "mctsrp" + workerNum);
+            workers[workerNum] = new Thread(() -> totalIters.getAndAdd(rootParallelSearch(rootNode, params, rand, useTTable, start, numStates)), "mctsrp" + workerNum);
             workers[workerNum].start();
         }
 
@@ -54,40 +56,43 @@ public final class MCTSRP implements MCTS {
 
         // Recommend the most selected action by majority voting.
         final HashMap<ACTION, Integer> votes = new HashMap<>();
+        int numNodes = 0;
         for(Node<STATE, ACTION> root : rootNodes) {
             final ACTION action = SearchNode.mostVisited(root, root.validActions(), rand);
             votes.put(action, votes.getOrDefault(action, 0) + 1);
+            numNodes += root.numNodes();
         }
         final ACTION bestAction = votes.entrySet().stream().max(Comparator.comparingInt(Map.Entry::getValue)).get().getKey();
         final double itersPerThread = (double) totalIters.get() / params.threadCount();
-        return new SearchResults<>(bestAction, itersPerThread, System.currentTimeMillis() - start);
+        return new SearchResults<>(bestAction, itersPerThread, System.currentTimeMillis() - start, numNodes, numStates.get());
     }
 
     private static
     <STATE extends VisibleState<STATE, ACTION>, ACTION extends MCTS.Action<STATE>>
-    int rootParallelSearch(Node<STATE, ACTION> rootNode, SearchParameters params, Random rand, long start) {
+    int rootParallelSearch(Node<STATE, ACTION> rootNode, SearchParameters params, Random rand, boolean useTTable, long start, AtomicInteger numStates) {
         long now = System.currentTimeMillis();
 
-        final ArrayDeque<Node<STATE, ACTION>> path = new ArrayDeque<>();
+        final ArrayDeque<Node<STATE, ACTION>> nodePath = new ArrayDeque<>();
+        final TranspositionTable<STATE, Node<STATE, ACTION>> transpositionTable = useTTable ? new RealTTable<>() : new DummyTTable<>();
 
         int iters = 0;
         while(!Thread.interrupted() && now - start <= params.maxTime() && (now - start < params.minTime() || iters < params.maxIters())) {
             iters++;
 
             Node<STATE, ACTION> currentNode = rootNode;
-            path.add(currentNode);
+            nodePath.add(currentNode);
 
             // Selection and Expansion - Select child nodes using UCT, expanding where necessary.
             boolean continueSelection = true;
             while(currentNode.scores() == null && continueSelection) {
-                final ACTION selectedAction = selectAction(currentNode, rand, params.uct());
-                currentNode.createChildIfNotPresent(selectedAction);
+                final ACTION selectedAction = SearchNode.selectBranch(currentNode, currentNode.validActions(), currentNode.state.activePlayer(), params.uct(), rand);
+                currentNode.createChildIfNotPresent(selectedAction, transpositionTable);
                 final Node<STATE, ACTION> selectedChild = currentNode.getChild(selectedAction);
                 if(selectedChild.visitCount == 0)
                     continueSelection = false;
 
                 currentNode = selectedChild;
-                path.add(currentNode);
+                nodePath.add(currentNode);
             }
 
             // Simulation - Choose a random action until the game is decided.
@@ -100,8 +105,8 @@ public final class MCTSRP implements MCTS {
 
             // Backpropagation - Update all nodes that were selected with the results of simulation.
             final double[] scores = simulatedState.scores();
-            while(!path.isEmpty()) {
-                final Node<STATE, ACTION> node = path.removeLast();
+            while(!nodePath.isEmpty()) {
+                final Node<STATE, ACTION> node = nodePath.removeLast();
                 node.visitCount++;
                 for(int i = 0; i < scores.length; i++)
                     node.totalScores[i] += scores[i];
@@ -109,41 +114,8 @@ public final class MCTSRP implements MCTS {
 
             now = System.currentTimeMillis();
         }
+        numStates.getAndAdd(transpositionTable.size());
         return iters;
-    }
-
-    private static
-    <STATE extends VisibleState<STATE, ACTION>, ACTION extends MCTS.Action<STATE>>
-    ACTION selectAction(Node<STATE, ACTION> parent, Random rand, UCT uct) {
-        final List<ACTION> actions = parent.validActions();
-        final int activePlayer = parent.state.activePlayer();
-        if(parent.visitCount == 0)
-            return actions.get(rand.nextInt(actions.size()));
-
-        final ArrayList<ACTION> maxActions = new ArrayList<>();
-        double maxUctValue = Double.NEGATIVE_INFINITY;
-
-        for(ACTION action : actions) {
-            final Node<STATE, ACTION> child = parent.getChild(action);
-            final double uctValue;
-            if(child == null || child.visitCount == 0) {
-                uctValue = uct.favorUnexplored() ? Double.POSITIVE_INFINITY : (parent.totalScores[activePlayer] / parent.visitCount);
-            } else {
-                final double exploitation = child.totalScores[activePlayer] / child.visitCount;
-                final double exploration = uct.explorationParam() * Math.sqrt(Math.log(parent.visitCount) / child.visitCount);
-                uctValue = exploitation + exploration;
-            }
-
-            if(uctValue == maxUctValue) {
-                maxActions.add(action);
-            } else if(uctValue > maxUctValue) {
-                maxUctValue = uctValue;
-                maxActions.clear();
-                maxActions.add(action);
-            }
-        }
-
-        return maxActions.get(rand.nextInt(maxActions.size()));
     }
 
     @Override
@@ -172,14 +144,45 @@ public final class MCTSRP implements MCTS {
         }
 
         @Override
+        public int visitCount() {
+            return visitCount;
+        }
+
+        @Override
+        public double totalScore(int activePlayer) {
+            return totalScores[activePlayer];
+        }
+
+        @Override
         public Node<STATE, ACTION> getChild(ACTION action) {
             return children.get(action);
         }
 
-        public void createChildIfNotPresent(ACTION action) {
+        @Override
+        public int selectCount(ACTION action) {
+            return getChild(action).visitCount;
+        }
+
+        @Override
+        public int availableCount(ACTION action) {
+            return visitCount;
+        }
+
+        @Override
+        public ReadWriteLock statsLock() {
+            return DUMMY_LOCK;
+        }
+
+        public void createChildIfNotPresent(ACTION action, TranspositionTable<STATE, Node<STATE, ACTION>> transpositionTable) {
             if(children.get(action) == null) {
                 final STATE state = action.applyToState(this.state.copy());
-                children.put(action, new Node<>(totalScores.length, state));
+                if(transpositionTable.contains(state)) {
+                    children.put(action, transpositionTable.get(state));
+                } else {
+                    final Node<STATE, ACTION> child = new Node<>(totalScores.length, state);
+                    children.put(action, child);
+                    transpositionTable.put(state, child);
+                }
             }
         }
 
@@ -191,9 +194,12 @@ public final class MCTSRP implements MCTS {
             return state.scores();
         }
 
-        @Override
-        public int visitCount() {
-            return visitCount;
+        public int numNodes() {
+            int num = 1;
+            for(Node<STATE, ACTION> child : children.values())
+                num += child.numNodes();
+
+            return num;
         }
 
         @Override

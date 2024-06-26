@@ -56,4 +56,11 @@ public class Sampler {
         final double delta2 = sample - mean;
         m2 += delta * delta2;
     }
+
+    public synchronized void reset() {
+        total = 0.0;
+        mean = 0.0;
+        m2 = 0.0;
+        count = 0;
+    }
 }

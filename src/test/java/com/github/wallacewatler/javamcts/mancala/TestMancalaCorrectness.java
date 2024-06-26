@@ -18,7 +18,7 @@ final class TestMancalaCorrectness {
 
         while(!rootState.validActions().isEmpty()) {
             System.out.println("\n" + rootState.displayString());
-            final SearchResults<ChooseHole> results = mcts.search(2, rootState, params, new Random());
+            final SearchResults<ChooseHole> results = mcts.search(2, rootState, params, new Random(), true);
             results.bestAction().applyToState(rootState);
         }
         System.out.println("\n" + rootState.displayString());

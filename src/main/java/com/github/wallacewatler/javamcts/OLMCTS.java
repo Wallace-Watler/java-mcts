@@ -4,15 +4,12 @@ import java.util.Random;
 
 /**
  * <h3>Open-loop Monte Carlo tree search (OLMCTS)</h3>
+ * OLMCTS is effective on stochastic games of perfect information, games involving non-discrete states, and games of
+ * hidden information where said information is hidden from all players. An action may involve randomness such that it
+ * can lead to one of many possible states. The revealing of hidden information can be treated as a random event.
  * <p>
- *     OLMCTS is effective on stochastic games of perfect information, games involving non-discrete states, and games of
- *     hidden information where said information is hidden from all players. An action may involve randomness such that
- *     it can lead to one of many possible states. The revealing of hidden information can be treated as a random event.
- * </p>
- * <p>
- *     To use {@code OLMCTS}, you'll need to implement two interfaces: {@link VisibleState} and {@link Action}. You can
- *     then perform the search by calling {@link OLMCTS#search} on one of the provided {@code OLMCTS} implementations.
- * </p>
+ * To use {@code OLMCTS}, you'll need to implement two interfaces: {@link VisibleState} and {@link Action}. You can then
+ * perform the search by calling {@link OLMCTS#search} on one of the provided {@code OLMCTS} implementations.
  *
  * @version 0.1.0
  * @since 0.1.0

@@ -2,6 +2,7 @@ package com.github.wallacewatler.javamcts;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * Open-loop MCTS with root-parallelization.
@@ -11,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Wallace Watler
  *
+ * @see OLMCTS
  * @see OLMCTSTP
  */
 public final class OLMCTSRP implements OLMCTS {
@@ -55,13 +57,15 @@ public final class OLMCTSRP implements OLMCTS {
 
         // Recommend the most selected action by majority voting.
         final HashMap<ACTION, Integer> votes = new HashMap<>();
-        for(Node node : rootNodes) {
-            final ACTION action = SearchNode.mostVisited(node, validActions, rand);
+        int numNodes = 0;
+        for(Node root : rootNodes) {
+            final ACTION action = SearchNode.mostVisited(root, validActions, rand);
             votes.put(action, votes.getOrDefault(action, 0) + 1);
+            numNodes += root.numNodes();
         }
         final ACTION bestAction = votes.entrySet().stream().max(Comparator.comparingInt(Map.Entry::getValue)).get().getKey();
         final double itersPerThread = (double) totalIters.get() / params.threadCount();
-        return new SearchResults<>(bestAction, itersPerThread, System.currentTimeMillis() - start);
+        return new SearchResults<>(bestAction, itersPerThread, System.currentTimeMillis() - start, numNodes, 0);
     }
 
     private static
@@ -87,7 +91,7 @@ public final class OLMCTSRP implements OLMCTS {
                 for(ACTION action : validActions)
                     currentNode.createChildIfNotPresent(action);
 
-                final ACTION selectedAction = selectAction(currentNode, rand, activePlayer, validActions, params.uct());
+                final ACTION selectedAction = SearchNode.selectBranch(currentNode, validActions, activePlayer, params.uct(), rand);
                 final Node selectedChild = currentNode.getChild(selectedAction);
                 if(selectedChild.visitCount == 0)
                     continueSelection = false;
@@ -123,38 +127,6 @@ public final class OLMCTSRP implements OLMCTS {
         return iters;
     }
 
-    private static
-    <STATE extends VisibleState<STATE, ACTION>, ACTION extends OLMCTS.Action<STATE>>
-    ACTION selectAction(Node parent, Random rand, int activePlayer, List<ACTION> actions, UCT uct) {
-        if(parent.visitCount == 0)
-            return actions.get(rand.nextInt(actions.size()));
-
-        final ArrayList<ACTION> maxBranches = new ArrayList<>();
-        double maxUctValue = Double.NEGATIVE_INFINITY;
-
-        for(ACTION branch : actions) {
-            final Node child = parent.getChild(branch);
-            final double uctValue;
-            if(child == null || child.availableCount == 0 || child.visitCount == 0) {
-                uctValue = uct.favorUnexplored() ? Double.POSITIVE_INFINITY : (parent.totalScores[activePlayer] / parent.visitCount);
-            } else {
-                final double exploitation = child.totalScores[activePlayer] / child.visitCount;
-                final double exploration = uct.explorationParam() * Math.sqrt(Math.log(child.availableCount) / child.visitCount);
-                uctValue = exploitation + exploration;
-            }
-
-            if(uctValue == maxUctValue) {
-                maxBranches.add(branch);
-            } else if(uctValue > maxUctValue) {
-                maxUctValue = uctValue;
-                maxBranches.clear();
-                maxBranches.add(branch);
-            }
-        }
-
-        return maxBranches.get(rand.nextInt(maxBranches.size()));
-    }
-
     /**
      * A node in an OLMCTS-RP search tree. Since actions are stochastic and states may be continuous in OLMCTS, a single
      * node represents a distribution of states reached via a particular sequence of actions. Each action leading from a
@@ -177,8 +149,33 @@ public final class OLMCTSRP implements OLMCTS {
         }
 
         @Override
+        public int visitCount() {
+            return visitCount;
+        }
+
+        @Override
+        public double totalScore(int activePlayer) {
+            return totalScores[activePlayer];
+        }
+
+        @Override
         public Node getChild(Object action) {
             return children.get(action);
+        }
+
+        @Override
+        public int selectCount(Object action) {
+            return getChild(action).visitCount;
+        }
+
+        @Override
+        public int availableCount(Object action) {
+            return getChild(action).availableCount;
+        }
+
+        @Override
+        public ReadWriteLock statsLock() {
+            return DUMMY_LOCK;
         }
 
         public void createChildIfNotPresent(Object action) {
@@ -186,9 +183,12 @@ public final class OLMCTSRP implements OLMCTS {
                 children.put(action, new Node(totalScores.length));
         }
 
-        @Override
-        public int visitCount() {
-            return visitCount;
+        public int numNodes() {
+            int num = 1;
+            for(Node child : children.values())
+                num += child.numNodes();
+
+            return num;
         }
 
         @Override

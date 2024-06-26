@@ -4,14 +4,11 @@ import java.util.List;
 import java.util.Random;
 
 /**
+ * An information set that represents a player's knowledge of a game state. Players are not aware of other players'
+ * information sets.
  * <p>
- *     An information set that represents a player's knowledge of a game state. Players are not aware of other players'
- *     information sets.
- * </p>
- * <p>
- *     On a conceptual level, information sets are analogous to states. As moves are observed during a game, information
- *     sets are updated with whatever knowledge can be gained from them, similar to how states are updated by actions.
- * </p>
+ * On a conceptual level, information sets are analogous to states. As moves are observed during a game, information
+ * sets are updated with whatever knowledge can be gained from them, similar to how states are updated by actions.
  *
  * @version 0.1.0
  * @since 0.1.0
