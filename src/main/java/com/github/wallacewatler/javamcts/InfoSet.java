@@ -29,8 +29,9 @@ public interface InfoSet<STATE, MOVE> {
 
     /**
      * Generate and return a randomized state that could possibly be the true game state based on the knowledge in this
-     * information set. {@code rand} should be used to generate the state. The returned state must not be the same
-     * object as this information set, and this information set should not be mutated by this method.
+     * information set. {@code rand} should be used to generate the state. Mutable parts of the returned state object
+     * must be independent of this information set object, and this information set should not be mutated by this
+     * method.
      *
      * @param rand a source of randomness
      *
