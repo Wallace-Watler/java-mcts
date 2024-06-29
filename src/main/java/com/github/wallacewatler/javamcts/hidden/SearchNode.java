@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A node in any MCTS tree that stores statistics of a search.
@@ -13,16 +14,18 @@ import java.util.concurrent.locks.ReadWriteLock;
 public interface SearchNode<BRANCH> {
     /** A non-functional {@link ReadWriteLock}. */
     ReadWriteLock DUMMY_RW_LOCK = new ReadWriteLock() {
-        private static final Lock LOCK = new Lock() {
-            public void lock() {}
-            public void lockInterruptibly() {}
-            public boolean tryLock() { return true; }
-            public boolean tryLock(long time, TimeUnit unit) { return true; }
-            public void unlock() {}
-            public Condition newCondition() { throw new UnsupportedOperationException(); }
-        };
-        public Lock readLock() { return LOCK; }
-        public Lock writeLock() { return LOCK; }
+        public Lock readLock() { return DUMMY_LOCK; }
+        public Lock writeLock() { return DUMMY_LOCK; }
+    };
+
+    /** A non-functional {@link Lock}. */
+    Lock DUMMY_LOCK = new Lock() {
+        public void lock() {}
+        public void lockInterruptibly() {}
+        public boolean tryLock() { return true; }
+        public boolean tryLock(long time, TimeUnit unit) { return true; }
+        public void unlock() {}
+        public Condition newCondition() { throw new UnsupportedOperationException(); }
     };
 
     /**

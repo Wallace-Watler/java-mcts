@@ -5,7 +5,6 @@ import com.github.wallacewatler.javamcts.VisibleState;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -19,7 +18,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public final class StateNode<STATE extends VisibleState<STATE, ACTION>, ACTION extends DeterministicAction<STATE>> implements SearchNode<ACTION> {
     private final ReentrantReadWriteLock statsLock = new ReentrantReadWriteLock();
     private final ReentrantLock childCreationLock = new ReentrantLock();
-    private final Map<ACTION, StateNode<STATE, ACTION>> children = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<ACTION, StateNode<STATE, ACTION>> children = new ConcurrentHashMap<>();
     public final STATE state;
 
     /** Number of times this node has been visited. */
@@ -89,9 +88,9 @@ public final class StateNode<STATE extends VisibleState<STATE, ACTION>, ACTION e
         return state.scores();
     }
 
+    @SuppressWarnings("NonAtomicOperationOnVolatileField")
     public void updateScores(double[] scores) {
         statsLock.writeLock().lock();
-        //noinspection NonAtomicOperationOnVolatileField
         visitCount++;
         for(int i = 0; i < scores.length; i++)
             totalScores[i] += scores[i];

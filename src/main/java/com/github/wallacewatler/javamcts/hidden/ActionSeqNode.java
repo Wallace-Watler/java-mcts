@@ -1,7 +1,6 @@
 package com.github.wallacewatler.javamcts.hidden;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -12,9 +11,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * maps to a unique child node.
  */
 public final class ActionSeqNode implements SearchNode<Object> {
-    private final ReentrantReadWriteLock statsLock;
-    private final ReentrantLock childCreationLock;
-    private final Map<Object, ActionSeqNode> children;
+    private final ReentrantReadWriteLock statsLock = new ReentrantReadWriteLock();
+    private final ReentrantLock childCreationLock = new ReentrantLock();
+    private final ConcurrentHashMap<Object, ActionSeqNode> children = new ConcurrentHashMap<>();
 
     /** Number of times this node has been visited. */
     private volatile int visitCount = 0;
@@ -26,9 +25,6 @@ public final class ActionSeqNode implements SearchNode<Object> {
     private final double[] totalScores;
 
     public ActionSeqNode(int numPlayers) {
-        statsLock = new ReentrantReadWriteLock();
-        childCreationLock = new ReentrantLock();
-        children = new ConcurrentHashMap<>();
         totalScores = new double[numPlayers];
     }
 
