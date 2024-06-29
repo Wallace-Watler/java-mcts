@@ -1,24 +1,24 @@
 package com.github.wallacewatler.javamcts;
 
-import com.github.wallacewatler.javamcts.hidden.MoveSeqNode;
+import com.github.wallacewatler.javamcts.hidden.ActionSeqNode;
 import com.github.wallacewatler.javamcts.hidden.Procedures;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * MO-ISMCTS with root parallelization. For details on how to use this class, see {@link MOISMCTS}.
+ * Information set MCTS with root parallelization. For details on how to use this class, see {@link ISMCTS}.
  *
  * @version 0.1.0
  * @since 0.1.0
  *
  * @author Wallace Watler
  */
-public final class MOISMCTSRP implements MOISMCTS {
+public final class ISMCTSRP implements ISMCTS {
     @Override
     public
-    <STATE extends State<ACTION>, ACTION extends ObservableAction<STATE, MOVE>, MOVE extends Move<ACTION>>
-    SearchResults<ACTION> search(int numPlayers, InfoSet<STATE, MOVE> infoSet, SearchParameters params, Random rand) {
+    <STATE extends State<ACTION>, ACTION extends StochasticAction<STATE>>
+    SearchResults<ACTION> search(int numPlayers, InfoSet<STATE, ACTION> infoSet, SearchParameters params, Random rand) {
         if(numPlayers < 1)
             throw new IllegalArgumentException("numPlayers must be at least 1");
 
@@ -30,30 +30,25 @@ public final class MOISMCTSRP implements MOISMCTS {
         final AtomicInteger totalIters = new AtomicInteger();
         // -------------------------------
 
-        // The root node for each player's tree for each thread
-        final ArrayList<ArrayList<MoveSeqNode>> trees = new ArrayList<>(params.threadCount());
-        for(int thread = 0; thread < params.threadCount(); thread++) {
-            final ArrayList<MoveSeqNode> rootNodes = new ArrayList<>(numPlayers);
-            for(int i = 0; i < numPlayers; i++)
-                rootNodes.add(new MoveSeqNode(null));
-
-            trees.add(rootNodes);
-        }
+        // One search tree for each thread
+        final ArrayList<ActionSeqNode> rootNodes = new ArrayList<>(params.threadCount());
+        for(int i = 0; i < params.threadCount(); i++)
+            rootNodes.add(new ActionSeqNode(numPlayers));
 
         // Start parallel searches.
         final Thread[] workers = new Thread[params.threadCount()];
         for(int workerNum = 0; workerNum < workers.length; workerNum++) {
-            final ArrayList<MoveSeqNode> rootNodes = trees.get(workerNum);
+            final ActionSeqNode rootNode = rootNodes.get(workerNum);
             workers[workerNum] = new Thread(() -> {
                 long now = System.currentTimeMillis();
                 int iters = 0;
                 while(!Thread.interrupted() && now - start <= params.maxTime() && (now - start < params.minTime() || iters < params.maxIters())) {
-                    Procedures.iterMOISMCTS(infoSet, rootNodes, params.uct(), rand);
+                    Procedures.iterISMCTS(infoSet, rootNode, params.uct(), rand);
                     iters++;
                     now = System.currentTimeMillis();
                 }
                 totalIters.addAndGet(iters);
-            }, "moismctsrp" + workerNum);
+            }, "ismctsrp" + workerNum);
             workers[workerNum].start();
         }
 
@@ -67,21 +62,20 @@ public final class MOISMCTSRP implements MOISMCTS {
         }
 
         // Recommend the most selected action by majority voting.
-        final HashMap<MOVE, Integer> votes = new HashMap<>();
+        final HashMap<ACTION, Integer> votes = new HashMap<>();
         int numNodes = 0;
-        for(ArrayList<MoveSeqNode> rootNodes : trees) {
-            final MoveSeqNode root = rootNodes.get(infoSet.owner());
-            final MOVE action = Procedures.mostVisited(root, infoSet.validMoves(), rand);
+        for(ActionSeqNode root : rootNodes) {
+            final ACTION action = Procedures.mostVisited(root, infoSet.validMoves(), rand);
             votes.put(action, votes.getOrDefault(action, 0) + 1);
             numNodes += root.numNodes();
         }
-        final ACTION bestAction = votes.entrySet().stream().max(Comparator.comparingInt(Map.Entry::getValue)).get().getKey().asAction();
+        final ACTION bestAction = votes.entrySet().stream().max(Comparator.comparingInt(Map.Entry::getValue)).get().getKey();
         final double itersPerThread = (double) totalIters.get() / params.threadCount();
         return new SearchResults<>(bestAction, itersPerThread, System.currentTimeMillis() - start, numNodes, 0);
     }
 
     @Override
     public String toString() {
-        return "MO-ISMCTS-RP";
+        return "ISMCTS-RP";
     }
 }

@@ -1,7 +1,7 @@
 package com.github.wallacewatler.javamcts;
 
 /**
- * Collates the results of a search.
+ * Collates the results of a game tree search.
  *
  * @param bestAction The best action found by the search.
  * @param itersPerThread The average number of iterations performed per thread.

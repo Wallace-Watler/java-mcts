@@ -7,9 +7,9 @@ import java.util.List;
  * <p>
  * A {@code VisibleState} does not contain any information that is hidden from players. Games containing information
  * that <i>is</i> hidden from <i>all</i> players (e.g. solitaire, in the form of face-down cards) can still be modeled
- * using {@code VisibleState} by treating the reveal of hidden information as a stochastic event. This trick does not
- * work if the information is only hidden from some players but not others (see {@link MOISMCTS} for handling that
- * category of games).
+ * using {@code VisibleState} by treating the reveal of hidden information as a random event (use {@link OLMCTS} for
+ * that). This trick does not work if the information is only hidden from some players but not others (see
+ * {@link MOISMCTS} for handling that category of games).
  *
  * @version 0.1.0
  * @since 0.1.0

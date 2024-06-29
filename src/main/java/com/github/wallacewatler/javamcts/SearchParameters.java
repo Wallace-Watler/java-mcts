@@ -5,8 +5,8 @@ package com.github.wallacewatler.javamcts;
  * time, the maximum search time, and the maximum number of iterations. Search will continue until at least the minimum
  * time has passed, even if it exceeds the maximum number of iterations. After that point, search will stop once either
  * the maximum time has passed or the maximum number of iterations has been reached. The actual time spent searching may
- * be larger than the defined maximum time, depending on how long the currently running iterations take to complete.<br>
- * <br>
+ * be larger than the defined maximum time, depending on how long the currently running iterations take to complete.
+ * <p>
  * {@code SearchParameters} also defines the number of threads to use for the search. There is no guarantee that more
  * threads will result in more efficient searches.
  *

@@ -1,6 +1,6 @@
 package com.github.wallacewatler.javamcts.mancala;
 
-import com.github.wallacewatler.javamcts.MCTS;
+import com.github.wallacewatler.javamcts.DeterministicAction;
 
 import java.util.Arrays;
 
@@ -9,7 +9,7 @@ import java.util.Arrays;
  *
  * @param hole The index of the hole to pick up pieces from.
  */
-public record ChooseHole(int hole) implements MCTS.Action<MancalaState> {
+public record ChooseHole(int hole) implements DeterministicAction<MancalaState> {
     @Override
     public MancalaState applyToState(MancalaState state) {
         // Pick up pieces in chosen hole.

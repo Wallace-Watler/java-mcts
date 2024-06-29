@@ -1,14 +1,14 @@
 package com.github.wallacewatler.javamcts.sheepshead;
 
-import com.github.wallacewatler.javamcts.MOISMCTS;
 import com.github.wallacewatler.javamcts.Move;
+import com.github.wallacewatler.javamcts.ObservableAction;
 
 import java.util.Random;
 
 /**
  * The only type of action in my simplified Sheepshead. It is visible to everyone.
  */
-public record PlayCard(Card card) implements MOISMCTS.Action<SheepsheadState, PlayCard>, Move<PlayCard> {
+public record PlayCard(Card card) implements ObservableAction<SheepsheadState, PlayCard>, Move<PlayCard> {
     @Override
     public SheepsheadState applyToState(SheepsheadState state, Random rand) {
         final Player player = state.players[state.activePlayer];

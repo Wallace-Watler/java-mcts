@@ -1,25 +1,25 @@
 package com.github.wallacewatler.javamcts;
 
-import com.github.wallacewatler.javamcts.hidden.MoveSeqNode;
+import com.github.wallacewatler.javamcts.hidden.ActionSeqNode;
 import com.github.wallacewatler.javamcts.hidden.Procedures;
 
-import java.util.*;
+import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * MO-ISMCTS with tree parallelization. For details on how to use this class, see {@link MOISMCTS}.
+ * Information set MCTS with tree parallelization. For details on how to use this class, see {@link ISMCTS}.
  *
  * @version 0.1.0
  * @since 0.1.0
  *
  * @author Wallace Watler
  */
-public final class MOISMCTSTP implements MOISMCTS {
+public final class ISMCTSTP implements ISMCTS {
     @Override
     public
-    <STATE extends State<ACTION>, ACTION extends ObservableAction<STATE, MOVE>, MOVE extends Move<ACTION>>
-    SearchResults<ACTION> search(int numPlayers, InfoSet<STATE, MOVE> infoSet, SearchParameters params, Random rand) {
+    <STATE extends State<ACTION>, ACTION extends StochasticAction<STATE>>
+    SearchResults<ACTION> search(int numPlayers, InfoSet<STATE, ACTION> infoSet, SearchParameters params, Random rand) {
         if(numPlayers < 1)
             throw new IllegalArgumentException("numPlayers must be at least 1");
 
@@ -30,10 +30,7 @@ public final class MOISMCTSTP implements MOISMCTS {
         final long start = System.currentTimeMillis();
         final AtomicInteger iters = new AtomicInteger();
         final Semaphore iterAllowance = new Semaphore(params.maxIters());
-        // The root node for each player's tree
-        final ArrayList<MoveSeqNode> rootNodes = new ArrayList<>(numPlayers);
-        for(int i = 0; i < numPlayers; i++)
-            rootNodes.add(new MoveSeqNode(null));
+        final ActionSeqNode rootNode = new ActionSeqNode(numPlayers);
         // -------------------------------
 
         // Start parallel searches.
@@ -42,11 +39,11 @@ public final class MOISMCTSTP implements MOISMCTS {
             workers[workerNum] = new Thread(() -> {
                 long now = System.currentTimeMillis();
                 while(!Thread.interrupted() && now - start <= params.maxTime() && (now - start < params.minTime() || iterAllowance.tryAcquire())) {
-                    Procedures.iterMOISMCTS(infoSet, rootNodes, params.uct(), rand);
+                    Procedures.iterISMCTS(infoSet, rootNode, params.uct(), rand);
                     iters.getAndIncrement();
                     now = System.currentTimeMillis();
                 }
-            }, "moismctstp" + workerNum);
+            }, "ismctstp" + workerNum);
             workers[workerNum].start();
         }
 
@@ -60,14 +57,13 @@ public final class MOISMCTSTP implements MOISMCTS {
         }
 
         // Recommend the most selected action. Ties are broken by randomness.
-        final MoveSeqNode rootNode = rootNodes.get(infoSet.owner());
-        final MOVE bestMove = Procedures.mostVisited(rootNode, infoSet.validMoves(), rand);
+        final ACTION bestAction = Procedures.mostVisited(rootNode, infoSet.validMoves(), rand);
         final double itersPerThread = (double) iters.get() / params.threadCount();
-        return new SearchResults<>(bestMove.asAction(), itersPerThread, System.currentTimeMillis() - start, rootNode.numNodes(), 0);
+        return new SearchResults<>(bestAction, itersPerThread, System.currentTimeMillis() - start, rootNode.numNodes(), 0);
     }
 
     @Override
     public String toString() {
-        return "MO-ISMCTS-TP";
+        return "ISMCTS-TP";
     }
 }
