@@ -17,48 +17,153 @@ Example code can be found in the package `src.test.java.com.github.wallacewatler
   number of possible outcomes is small)
 
 ## Usage
-### Closed Loop MCTS
-This is the classic form of MCTS and is effective on deterministic games of perfect information. The entire game state
-and all players' actions are visible to everyone, and every action has a pre-determined effect on the state. Examples of
-games in this category are Tic-Tac-Toe (a.k.a. Naughts and Crosses), chess, and mancala.
-
-To use Closed Loop MCTS, you'll need to implement two interfaces: `VisibleState` and `DeterministicAction`. You can then
-perform the search by calling `search` on one of the provided `MCTS` implementations: `MCTSRP` or `MCTSTP` for
-root-parallelized or tree-parallelized search, respectively.
+Each algorithm has an interface with two provided implementations, one for root-parallelized search and one for
+tree-parallelized search. The names of root-parallelized variants are suffixed with `RP`, and those of tree-parallelized
+are suffixed with `TP`. You can perform the search by calling `search` on any algorithm object. See the docs for further
+details.
 
 ```java
-class MyState implements VisibleState<MyState, MyAction> {
-  // Your game's state here
-
-  public List<MyAction> validActions() {
-    return /* the available actions in this state */;
-  }
-
-  public MyState copy() {
-    return /* a copy of this state */;
-  }
-}
-
-class MyAction implements DeterministicAction<MyState> {
-  // Action data here
-  
-  public MyState applyToState(MyState state) {
-    return /* the updated state */;
-  }
-}
-
-// Specify time constraints, iterations, UCT policy, and number of threads
+// Specify time constraints, number of iterations, UCT policy, and number of threads
 SearchParameters params = new SearchParameters(0, 1000, 1000000, new UCT(), 2);
+
 MyState rootState = new MyState(/* ... */);
 SearchResults results = new MCTSTP().search(2, rootState, params, new Random(), true);
 MyAction best = results.bestAction();
 ```
 
+### Closed Loop MCTS
+This is the classic form of MCTS and is effective on deterministic games of perfect information. The entire game state
+and all players' actions are visible to everyone, and every action has a pre-determined effect on the state. Examples of
+games in this category are Tic-Tac-Toe (a.k.a. Naughts and Crosses), chess, and mancala.
+
+To use Closed Loop MCTS, you'll need to implement two interfaces: `VisibleState` and `DeterministicAction`. The provided
+implementations are `MCTSRP` and `MCTSTP`.
+
+```java
+class MyState implements VisibleState<MyState, MyAction> {
+  // Your game's state here
+
+  public int activePlayer() { /* ... */ }
+  
+  public List<MyAction> validActions() { /* ... */ }
+  
+  public double[] scores() { /* ... */ }
+
+  public MyState copy() { /* ... */ }
+}
+
+class MyAction implements DeterministicAction<MyState> {
+  // Action data here
+  
+  public MyState applyToState(MyState state) { /* ... */ }
+}
+```
+
 ### Open Loop MCTS
-TODO
+This is effective on stochastic games of perfect information, games involving non-discrete states, and games of hidden
+information where said information is hidden from all players. An action may involve randomness such that it can lead to
+one of many possible states.
 
-### Information Set MCTS
-TODO
+To use OLMCTS, you'll need to implement two interfaces: `VisibleState` and `StochasticAction`. The provided
+implementations are `OLMCTSRP` and `OLMCTSTP`. To handle information that is hidden from all players, you can treat its
+reveal as a random event; that is, you can bake it into `StochasticAction`.
 
-### Multiple-observer Information Set MCTS
-TODO
+```java
+class MyState implements VisibleState<MyState, MyAction> {
+  // Your game's state here
+
+  public int activePlayer() { /* ... */ }
+
+  public List<MyAction> validActions() { /* ... */ }
+
+  public double[] scores() { /* ... */ }
+
+  public MyState copy() { /* ... */ }
+}
+
+class MyAction implements StochasticAction<MyState> {
+  // Action data here
+
+  public MyState applyToState(MyState state, Random rand) { /* ... */ }
+}
+```
+
+### Multiple-observer Information Set MCTS (MO-ISMCTS)
+Multiple-observer information set Monte Carlo tree search (MO-ISMCTS) is effective on games of imperfect information,
+where knowledge of the game state can vary between players. Each player maintains an information set that represents
+this knowledge. Furthermore, players do not see other players' actions directly since certain aspects of those actions
+may be hidden. Instead, players observe actions as moves, which are equivalence classes on actions. It is assumed that
+every player has full view of their own actions. Examples of games that MO-ISMCTS can handle are hearts, cribbage, and
+poker.
+
+To use MO-ISMCTS, you'll need to implement four interfaces: `State`, `ObservableAction`, `InfoSet`, and `Move`. The
+provided implementations are `MOISMCTSRP` and `MOISMCTSTP`. Simultaneous actions can be modeled as sequential actions
+that are hidden from all other players until some event reveals them at once.
+
+```java
+class MyState implements State<MyAction> {
+  // Your game's state here
+
+  public int activePlayer() { /* ... */ }
+
+  public List<MyAction> validActions() { /* ... */ }
+
+  public double[] scores() { /* ... */ }
+}
+
+class MyAction implements ObservableAction<MyState, MyMove> {
+  // Action data here
+  
+  public MyState applyToState(MyState state, Random rand) { /* ... */ }
+  
+  public MyMove observe(int observer) { /* ... */ }
+}
+
+class MyInfoSet implements InfoSet<MyState, MyMove> {
+  // Your information set data here
+  
+  public int owner() { /* ... */ }
+  
+  public MyState determinize(Random rand) { /* ... */ }
+  
+  public List<MyMove> validMoves() { /* ... */ }
+}
+```
+
+### Information Set MCTS (ISMCTS)
+This is effective on games of imperfect information, where knowledge of the game state can vary between players. Each
+player maintains an information set that represents this knowledge. As actions are done, knowledge may be gained from
+them.
+
+To use ISMCTS, you'll need to implement three interfaces: `State`, `StochasticAction`, and `InfoSet`. The provided
+implementations are `ISMCTSRP` and `ISMCTSTP`. The `MOVE` type parameter of your `InfoSet` implementation should be the
+type of your `StochasticAction`. This is because ISMCTS is a special case of MO-ISMCTS (see above) where all actions are
+fully visible to all players, hence moves and actions are one and the same.
+
+```java
+class MyState implements State<MyAction> {
+  // Your game's state here
+
+  public int activePlayer() { /* ... */ }
+
+  public List<MyAction> validActions() { /* ... */ }
+
+  public double[] scores() { /* ... */ }
+}
+
+class MyAction implements StochasticAction<MyState> {
+  // Action data here
+  
+  public MyState applyToState(MyState state, Random rand) { /* ... */ }
+}
+
+class MyInfoSet implements InfoSet<MyState, MyAction> {
+  // Your information set data here
+  
+  public int owner() { /* ... */ }
+  
+  public MyState determinize(Random rand) { /* ... */ }
+  
+  public List<MyAction> validMoves() { /* ... */ }
+}
+```
