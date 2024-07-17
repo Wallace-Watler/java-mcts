@@ -53,7 +53,7 @@ class MyState implements VisibleState<MyState, MyAction> {
 }
 
 class MyAction implements DeterministicAction<MyState> {
-  // Action data here
+  // Your action data here
   
   public MyState applyToState(MyState state) { /* ... */ }
 }
@@ -82,7 +82,7 @@ class MyState implements VisibleState<MyState, MyAction> {
 }
 
 class MyAction implements StochasticAction<MyState> {
-  // Action data here
+  // Your action data here
 
   public MyState applyToState(MyState state, Random rand) { /* ... */ }
 }
@@ -112,7 +112,7 @@ class MyState implements State<MyAction> {
 }
 
 class MyAction implements ObservableAction<MyState, MyMove> {
-  // Action data here
+  // Your action data here
   
   public MyState applyToState(MyState state, Random rand) { /* ... */ }
   
@@ -127,6 +127,12 @@ class MyInfoSet implements InfoSet<MyState, MyMove> {
   public MyState determinize(Random rand) { /* ... */ }
   
   public List<MyMove> validMoves() { /* ... */ }
+}
+
+class MyMove implements Move<MyAction> {
+  // Your move data here
+  
+  public MyAction asAction() { /* ... */ }
 }
 ```
 
@@ -152,7 +158,7 @@ class MyState implements State<MyAction> {
 }
 
 class MyAction implements StochasticAction<MyState> {
-  // Action data here
+  // Your action data here
   
   public MyState applyToState(MyState state, Random rand) { /* ... */ }
 }
