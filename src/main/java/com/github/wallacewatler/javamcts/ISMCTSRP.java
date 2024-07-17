@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Wallace Watler
  */
-public final class ISMCTSRP implements ISMCTS {
+public final class ISMCTSRP implements ISMCTS, Cloneable {
     @Override
     public
     <STATE extends State<ACTION>, ACTION extends StochasticAction<STATE>>
@@ -69,7 +69,12 @@ public final class ISMCTSRP implements ISMCTS {
             votes.put(action, votes.getOrDefault(action, 0) + 1);
             numNodes += root.numNodes();
         }
-        final ACTION bestAction = votes.entrySet().stream().max(Comparator.comparingInt(Map.Entry::getValue)).get().getKey();
+
+        final ACTION bestAction = votes.entrySet().stream()
+                .max(Comparator.comparingInt(Map.Entry::getValue))
+                .get()
+                .getKey();
+
         final double itersPerThread = (double) totalIters.get() / params.threadCount();
         return new SearchResults<>(bestAction, itersPerThread, System.currentTimeMillis() - start, numNodes, 0);
     }
@@ -77,5 +82,21 @@ public final class ISMCTSRP implements ISMCTS {
     @Override
     public String toString() {
         return "ISMCTS-RP";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        return o != null && getClass() == o.getClass();
+    }
+
+    @Override
+    public int hashCode() {
+        return 0;
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

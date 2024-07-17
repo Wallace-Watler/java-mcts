@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Wallace Watler
  */
-public final class MOISMCTSRP implements MOISMCTS {
+public final class MOISMCTSRP implements MOISMCTS, Cloneable {
     @Override
     public
     <STATE extends State<ACTION>, ACTION extends ObservableAction<STATE, MOVE>, MOVE extends Move<ACTION>>
@@ -35,7 +35,7 @@ public final class MOISMCTSRP implements MOISMCTS {
         for(int thread = 0; thread < params.threadCount(); thread++) {
             final ArrayList<MoveSeqNode> rootNodes = new ArrayList<>(numPlayers);
             for(int i = 0; i < numPlayers; i++)
-                rootNodes.add(new MoveSeqNode(null));
+                rootNodes.add(new MoveSeqNode());
 
             trees.add(rootNodes);
         }
@@ -83,5 +83,21 @@ public final class MOISMCTSRP implements MOISMCTS {
     @Override
     public String toString() {
         return "MO-ISMCTS-RP";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        return o != null && getClass() == o.getClass();
+    }
+
+    @Override
+    public int hashCode() {
+        return 0;
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

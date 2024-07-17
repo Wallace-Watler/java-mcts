@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @see OLMCTS
  * @see OLMCTSRP
  */
-public final class OLMCTSTP implements OLMCTS {
+public final class OLMCTSTP implements OLMCTS, Cloneable {
     @Override
     public
     <STATE extends VisibleState<STATE, ACTION>, ACTION extends StochasticAction<STATE>>
@@ -67,5 +67,21 @@ public final class OLMCTSTP implements OLMCTS {
     @Override
     public String toString() {
         return "OLMCTS-TP";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        return o != null && getClass() == o.getClass();
+    }
+
+    @Override
+    public int hashCode() {
+        return 0;
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

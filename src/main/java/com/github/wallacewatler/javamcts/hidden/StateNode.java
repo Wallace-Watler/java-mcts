@@ -12,8 +12,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * A node in a search tree that represents a particular game state. Each node stores a game state, and each action
- * leading from a node maps to a unique child node. Locks are used to prevent data corruption from simultaneous
- * reads and writes.
+ * leading from a node maps to a unique child node.
  */
 public final class StateNode<STATE extends VisibleState<STATE, ACTION>, ACTION extends DeterministicAction<STATE>> implements SearchNode<ACTION> {
     private final ReentrantReadWriteLock statsLock = new ReentrantReadWriteLock();
@@ -21,10 +20,7 @@ public final class StateNode<STATE extends VisibleState<STATE, ACTION>, ACTION e
     private final ConcurrentHashMap<ACTION, StateNode<STATE, ACTION>> children = new ConcurrentHashMap<>();
     public final STATE state;
 
-    /** Number of times this node has been visited. */
     private volatile int visitCount = 0;
-
-    /** Total score that each player obtains by going through this node. */
     private final double[] totalScores;
 
     public StateNode(int numPlayers, STATE state) {
@@ -64,6 +60,7 @@ public final class StateNode<STATE extends VisibleState<STATE, ACTION>, ACTION e
 
     public void createChildIfNotPresent(ACTION action, TranspositionTable<STATE, ACTION> table) {
         childCreationLock.lock();
+
         if(!children.containsKey(action)) {
             final STATE state = action.applyToState(this.state.copy());
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
@@ -77,6 +74,7 @@ public final class StateNode<STATE extends VisibleState<STATE, ACTION>, ACTION e
                 }
             }
         }
+
         childCreationLock.unlock();
     }
 
@@ -91,6 +89,7 @@ public final class StateNode<STATE extends VisibleState<STATE, ACTION>, ACTION e
     @SuppressWarnings("NonAtomicOperationOnVolatileField")
     public void updateScores(double[] scores) {
         statsLock.writeLock().lock();
+
         visitCount++;
         for(int i = 0; i < scores.length; i++)
             totalScores[i] += scores[i];

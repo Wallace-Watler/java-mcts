@@ -6,12 +6,15 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.function.Function;
 
 /** Procedures that don't belong to any one class. */
 public final class Procedures {
+    /**
+     * Do an iteration of MCTS.
+     */
     public static <STATE extends VisibleState<STATE, ACTION>, ACTION extends DeterministicAction<STATE>>
     void iterMCTS(StateNode<STATE, ACTION> rootNode, UCT uct, Random rand, TranspositionTable<STATE, ACTION> table) {
+        // Stores the path of traversal through the search tree
         final ArrayDeque<StateNode<STATE, ACTION>> nodePath = new ArrayDeque<>();
 
         StateNode<STATE, ACTION> currentNode = rootNode;
@@ -20,9 +23,11 @@ public final class Procedures {
         // Selection and Expansion - Select child nodes using UCT, expanding where necessary.
         boolean continueSelection = true;
         while(currentNode.scores() == null && continueSelection) {
-            final ACTION selectedAction = Procedures.uctSelection(currentNode, currentNode.validActions(), currentNode.state.activePlayer(), uct, rand);
+            final ACTION selectedAction = uctSelection(currentNode, currentNode.validActions(), currentNode.state.activePlayer(), uct, rand);
+
             currentNode.createChildIfNotPresent(selectedAction, table);
             final StateNode<STATE, ACTION> selectedChild = currentNode.getChild(selectedAction);
+
             if(selectedChild.visitCount() == 0)
                 continueSelection = false;
 
@@ -44,138 +49,77 @@ public final class Procedures {
             nodePath.removeLast().updateScores(scores);
     }
 
+    /**
+     * Do an iteration of OLMCTS.
+     */
     public static <STATE extends VisibleState<STATE, ACTION>, ACTION extends StochasticAction<STATE>>
     void iterOLMCTS(STATE rootState, ActionSeqNode rootNode, UCT uct, Random rand) {
-        final ArrayDeque<ActionSeqNode> nodePath = new ArrayDeque<>();
-
-        ActionSeqNode currentNode = rootNode;
-        nodePath.add(currentNode);
-        STATE simulatedState = rootState.copy();
-        List<ACTION> validActions = simulatedState.validActions();
-
-        // Selection and Expansion - Select child nodes using UCT, expanding where necessary.
-        boolean continueSelection = true;
-        while(simulatedState.scores() == null && continueSelection) {
-            for(ACTION action : validActions)
-                currentNode.createChildIfNotPresent(action);
-
-            final ACTION selectedAction = Procedures.uctSelection(currentNode, validActions, simulatedState.activePlayer(), uct, rand);
-            final ActionSeqNode selectedChild = currentNode.getChild(selectedAction);
-            if(selectedChild.visitCount() == 0)
-                continueSelection = false;
-
-            for(ACTION action : validActions)
-                currentNode.getChild(action).incAvailableCount();
-
-            simulatedState = selectedAction.applyToState(simulatedState, rand);
-            validActions = simulatedState.validActions();
-
-            currentNode = selectedChild;
-            nodePath.add(currentNode);
-        }
-
-        // Simulation - Choose a random action until the game is decided.
-        while(simulatedState.scores() == null) {
-            final ACTION action = validActions.get(rand.nextInt(validActions.size()));
-            simulatedState = action.applyToState(simulatedState, rand);
-            validActions = simulatedState.validActions();
-        }
-
-        // Backpropagation - Update all nodes that were selected with the results of simulation.
-        final double[] scores = simulatedState.scores();
-        while(!nodePath.isEmpty())
-            nodePath.removeLast().updateScores(scores);
+        final STATE simulatedState = rootState.copy();
+        iterActionSeq(simulatedState, rootNode, uct, rand);
     }
 
+    /**
+     * Do an iteration of ISMCTS.
+     */
     public static <STATE extends State<ACTION>, ACTION extends StochasticAction<STATE>>
     void iterISMCTS(InfoSet<STATE, ACTION> infoSet, ActionSeqNode rootNode, UCT uct, Random rand) {
-        final ArrayDeque<ActionSeqNode> nodePath = new ArrayDeque<>();
-
-        ActionSeqNode currentNode = rootNode;
-        nodePath.add(currentNode);
-
-        // Choose a random determinized state consistent with the information set of the player searching the tree.
-        STATE simulatedState = infoSet.determinize(rand);
-        List<ACTION> validActions = simulatedState.validActions();
-
-        // Selection and Expansion - Select child nodes using UCT, expanding where necessary.
-        boolean continueSelection = true;
-        while(simulatedState.scores() == null && continueSelection) {
-            for(ACTION action : validActions)
-                currentNode.createChildIfNotPresent(action);
-
-            final ACTION selectedAction = Procedures.uctSelection(currentNode, validActions, simulatedState.activePlayer(), uct, rand);
-            final ActionSeqNode selectedChild = currentNode.getChild(selectedAction);
-            if(selectedChild.visitCount() == 0)
-                continueSelection = false;
-
-            for(ACTION action : validActions)
-                currentNode.getChild(action).incAvailableCount();
-
-            simulatedState = selectedAction.applyToState(simulatedState, rand);
-            validActions = simulatedState.validActions();
-
-            currentNode = selectedChild;
-            nodePath.add(currentNode);
-        }
-
-        // Simulation - Choose a random action until the game is decided.
-        while(simulatedState.scores() == null) {
-            final ACTION action = validActions.get(rand.nextInt(validActions.size()));
-            simulatedState = action.applyToState(simulatedState, rand);
-            validActions = simulatedState.validActions();
-        }
-
-        // Backpropagation - Update all nodes that were selected with the results of simulation.
-        final double[] scores = simulatedState.scores();
-        while(!nodePath.isEmpty())
-            nodePath.removeLast().updateScores(scores);
+        // Choose a randomly determinized state consistent with the information set of the player searching the tree.
+        final STATE simulatedState = infoSet.determinize(rand);
+        iterActionSeq(simulatedState, rootNode, uct, rand);
     }
 
+    /**
+     * Do an iteration of MO-ISMCTS.
+     */
     public static <STATE extends State<ACTION>, ACTION extends ObservableAction<STATE, MOVE>, MOVE extends Move<ACTION>>
     void iterMOISMCTS(InfoSet<STATE, MOVE> infoSet, ArrayList<MoveSeqNode> rootNodes, UCT uct, Random rand) {
-        final Function<STATE, List<MOVE>> stateValidMoves = state -> state.validActions().stream()
-                .map(action -> action.observe(state.activePlayer()))
-                .toList();
+        /*
+        Stores the path of traversal through each player's search tree. The first element of the outer list is the root
+        nodes, the second element is the nodes one level down, etc.
+         */
+        final ArrayDeque<ArrayList<MoveSeqNode>> nodeLevels = new ArrayDeque<>();
+        nodeLevels.add(rootNodes);
 
         // The node at i is the current node in player i's tree.
-        final ArrayList<MoveSeqNode> currentNodes = new ArrayList<>(rootNodes);
+        ArrayList<MoveSeqNode> currentNodes = rootNodes;
 
         // Current node in the tree of the active player
         MoveSeqNode activeNode = currentNodes.get(infoSet.owner());
 
         // Choose a random determinized state consistent with the information set of the player searching the tree.
         STATE simulatedState = infoSet.determinize(rand);
-        List<MOVE> validMoves = stateValidMoves.apply(simulatedState);
+        List<MOVE> validMoves = stateValidMoves(simulatedState);
 
         // Selection and Expansion - Select child nodes using UCT, expanding where necessary.
         boolean continueSelection = true;
         while(simulatedState.scores() == null && continueSelection) {
-            for(MOVE move : validMoves)
-                activeNode.createChildIfNotPresent(move);
+            final MOVE selectedMove = uctSelection(activeNode, validMoves, simulatedState.activePlayer(), uct, rand);
 
-            final MOVE selectedMove = Procedures.uctSelection(activeNode, validMoves, simulatedState.activePlayer(), uct, rand);
-            final ACTION selectedAction = selectedMove.asAction();
+            for(MOVE move : validMoves) {
+                activeNode.createChildIfNotPresent(move);
+                activeNode.getChild(move).incAvailableCount();
+            }
 
             final MoveSeqNode selectedChild = activeNode.getChild(selectedMove);
             if(selectedChild.visitCount() == 0)
                 continueSelection = false;
 
-            for(MOVE move : validMoves)
-                activeNode.getChild(move).incAvailableCount();
+            final ACTION selectedAction = selectedMove.asAction();
 
-            // Descend through each player's tree.
+            // Use the selected action to descend through each player's tree.
+            final ArrayList<MoveSeqNode> nextLevel = new ArrayList<>(currentNodes.size());
+            nodeLevels.add(nextLevel);
             for(int pov = 0; pov < currentNodes.size(); pov++) {
                 final MOVE move = selectedAction.observe(pov);
                 final MoveSeqNode node = currentNodes.get(pov);
                 node.createChildIfNotPresent(move);
-                final MoveSeqNode child = node.getChild(move);
-                currentNodes.set(pov, child);
+                nextLevel.add(node.getChild(move));
             }
+            currentNodes = nextLevel;
 
+            // Set up for next selection
             simulatedState = selectedAction.applyToState(simulatedState, rand);
-            validMoves = stateValidMoves.apply(simulatedState);
-
+            validMoves = stateValidMoves(simulatedState);
             activeNode = currentNodes.get(simulatedState.activePlayer());
         }
 
@@ -183,13 +127,16 @@ public final class Procedures {
         while(simulatedState.scores() == null) {
             final ACTION action = validMoves.get(rand.nextInt(validMoves.size())).asAction();
             simulatedState = action.applyToState(simulatedState, rand);
-            validMoves = stateValidMoves.apply(simulatedState);
+            validMoves = stateValidMoves(simulatedState);
         }
 
         // Backpropagation - Update all nodes that were selected with the results of simulation.
         final double[] scores = simulatedState.scores();
-        for(int pov = 0; pov < currentNodes.size(); pov++)
-            currentNodes.get(pov).backPropagate(scores[pov]);
+        while(!nodeLevels.isEmpty()) {
+            final ArrayList<MoveSeqNode> nodeLevel = nodeLevels.removeLast();
+            for(int pov = 0; pov < nodeLevel.size(); pov++)
+                nodeLevel.get(pov).updateScore(scores[pov]);
+        }
     }
 
     /**
@@ -263,5 +210,59 @@ public final class Procedures {
             }
         }
         return maxBranches.get(rand.nextInt(maxBranches.size()));
+    }
+
+    /**
+     * Shared by OLMCTS and ISMCTS. Does an iteration using a simulated state and action sequence nodes.
+     */
+    private static <STATE extends State<ACTION>, ACTION extends StochasticAction<STATE>>
+    void iterActionSeq(STATE simulatedState, ActionSeqNode rootNode, UCT uct, Random rand) {
+        // Stores the path of traversal through the search tree
+        final ArrayDeque<ActionSeqNode> nodePath = new ArrayDeque<>();
+
+        ActionSeqNode currentNode = rootNode;
+        nodePath.add(currentNode);
+
+        List<ACTION> validActions = simulatedState.validActions();
+
+        // Selection and Expansion - Select child nodes using UCT, expanding where necessary.
+        boolean continueSelection = true;
+        while(simulatedState.scores() == null && continueSelection) {
+            final ACTION selectedAction = uctSelection(currentNode, validActions, simulatedState.activePlayer(), uct, rand);
+
+            for(ACTION action : validActions) {
+                currentNode.createChildIfNotPresent(action);
+                currentNode.getChild(action).incAvailableCount();
+            }
+
+            final ActionSeqNode selectedChild = currentNode.getChild(selectedAction);
+            if(selectedChild.visitCount() == 0)
+                continueSelection = false;
+
+            simulatedState = selectedAction.applyToState(simulatedState, rand);
+            validActions = simulatedState.validActions();
+
+            currentNode = selectedChild;
+            nodePath.add(currentNode);
+        }
+
+        // Simulation - Choose a random action until the game is decided.
+        while(simulatedState.scores() == null) {
+            final ACTION action = validActions.get(rand.nextInt(validActions.size()));
+            simulatedState = action.applyToState(simulatedState, rand);
+            validActions = simulatedState.validActions();
+        }
+
+        // Backpropagation - Update all nodes that were selected with the results of simulation.
+        final double[] scores = simulatedState.scores();
+        while(!nodePath.isEmpty())
+            nodePath.removeLast().updateScores(scores);
+    }
+
+    /** Computes the valid moves for a state. */
+    private static <MOVE> List<MOVE> stateValidMoves(State<? extends ObservableAction<?, MOVE>> state) {
+        return state.validActions().stream()
+                .map(action -> action.observe(state.activePlayer()))
+                .toList();
     }
 }

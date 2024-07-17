@@ -1,40 +1,31 @@
 package com.github.wallacewatler.javamcts.hidden;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * A node in any MCTS tree that stores statistics of a search.
+ * A node in a search tree. Each node stores statistics such as the number of times it's been visited and its estimated
+ * value. Locks are used to prevent data corruption from simultaneous reads and writes.
  *
  * @param <BRANCH> the type of object connecting nodes
  */
 public interface SearchNode<BRANCH> {
-    /** A non-functional {@link ReadWriteLock}. */
-    ReadWriteLock DUMMY_RW_LOCK = new ReadWriteLock() {
-        public Lock readLock() { return DUMMY_LOCK; }
-        public Lock writeLock() { return DUMMY_LOCK; }
-    };
-
-    /** A non-functional {@link Lock}. */
-    Lock DUMMY_LOCK = new Lock() {
-        public void lock() {}
-        public void lockInterruptibly() {}
-        public boolean tryLock() { return true; }
-        public boolean tryLock(long time, TimeUnit unit) { return true; }
-        public void unlock() {}
-        public Condition newCondition() { throw new UnsupportedOperationException(); }
-    };
-
     /**
      * @return The number of times this node has been visited.
      */
     int visitCount();
 
+    /**
+     * @param activePlayer the player who does an action from this node
+     *
+     * @return The estimated score for {@code activePlayer} in this node.
+     */
     double totalScore(int activePlayer);
 
+    /**
+     * @param branch a branch leading out of this node
+     *
+     * @return The child of this node that corresponds to {@code branch}.
+     */
     SearchNode<BRANCH> getChild(BRANCH branch);
 
     /**
@@ -47,5 +38,8 @@ public interface SearchNode<BRANCH> {
      */
     int availableCount(BRANCH branch);
 
+    /**
+     * @return The lock used to maintain the integrity of this node's statistics.
+     */
     ReadWriteLock statsLock();
 }

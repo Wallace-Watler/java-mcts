@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Wallace Watler
  */
-public final class MCTSTP implements MCTS {
+public final class MCTSTP implements MCTS, Cloneable {
     @Override
     public
     <STATE extends VisibleState<STATE, ACTION>, ACTION extends DeterministicAction<STATE>>
@@ -65,5 +65,21 @@ public final class MCTSTP implements MCTS {
     @Override
     public String toString() {
         return "MCTS-TP";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        return o != null && getClass() == o.getClass();
+    }
+
+    @Override
+    public int hashCode() {
+        return 0;
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

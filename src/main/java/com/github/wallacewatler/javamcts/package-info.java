@@ -4,6 +4,7 @@
  * <ul>
  *     <li>Closed Loop MCTS</li>
  *     <li>Open Loop MCTS</li>
+ *     <li>Information Set MCTS</li>
  *     <li>Multiple-observer Information Set MCTS</li>
  * </ul>
  * Between these algorithms, JavaMCTS can handle deterministic actions, stochastic actions, non-discrete state spaces,
@@ -13,6 +14,7 @@
  *
  * @see com.github.wallacewatler.javamcts.MCTS
  * @see com.github.wallacewatler.javamcts.OLMCTS
+ * @see com.github.wallacewatler.javamcts.ISMCTS
  * @see com.github.wallacewatler.javamcts.MOISMCTS
  */
 package com.github.wallacewatler.javamcts;

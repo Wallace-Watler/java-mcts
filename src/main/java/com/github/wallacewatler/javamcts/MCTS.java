@@ -5,7 +5,8 @@ import java.util.Random;
 /**
  * This is the classic form of Monte Carlo tree search, closed loop MCTS, and is effective on deterministic games of
  * perfect information. The entire game state and all players' actions are visible to everyone, and every action has a
- * pre-determined effect on the state. Examples of games in this category are Tic-Tac-Toe, chess, and mancala.
+ * pre-determined effect on the state. Examples of games in this category are Tic-Tac-Toe (a.k.a. Naughts and Crosses),
+ * chess, and mancala.
  * <p>
  * To use {@code MCTS}, you'll need to implement two interfaces: {@link VisibleState} and {@link DeterministicAction}.
  * You can then perform the search by calling {@link MCTS#search} on one of the provided {@code MCTS} implementations

@@ -15,13 +15,8 @@ public final class ActionSeqNode implements SearchNode<Object> {
     private final ReentrantLock childCreationLock = new ReentrantLock();
     private final ConcurrentHashMap<Object, ActionSeqNode> children = new ConcurrentHashMap<>();
 
-    /** Number of times this node has been visited. */
     private volatile int visitCount = 0;
-
-    /** Number of times this node has been available for selection. */
     private volatile int availableCount = 0;
-
-    /** Total score that each player obtains by going through this node. */
     private final double[] totalScores;
 
     public ActionSeqNode(int numPlayers) {

@@ -5,6 +5,9 @@ import com.github.wallacewatler.javamcts.VisibleState;
 
 import java.util.HashMap;
 
+/**
+ * An actual {@link TranspositionTable} (as opposed to a {@link DummyTable}).
+ */
 public final class RealTable<STATE extends VisibleState<STATE, ACTION>, ACTION extends DeterministicAction<STATE>> implements TranspositionTable<STATE, ACTION> {
     private final HashMap<STATE, StateNode<STATE, ACTION>> table = new HashMap<>();
 
