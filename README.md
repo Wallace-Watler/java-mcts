@@ -36,8 +36,9 @@ This is the classic form of MCTS and is effective on deterministic games of perf
 and all players' actions are visible to everyone, and every action has a pre-determined effect on the state. Examples of
 games in this category are Tic-Tac-Toe (a.k.a. Naughts and Crosses), chess, and mancala.
 
-To use Closed Loop MCTS, you'll need to implement two interfaces: `VisibleState` and `DeterministicAction`. The provided
-implementations are `MCTSRP` and `MCTSTP`.
+To use Closed Loop MCTS, you'll need to implement two interfaces: `VisibleState` and `DeterministicAction`. These
+represent game states and actions, respectively. You can then use the provided algorithm implementations, `MCTSRP` and
+`MCTSTP`.
 
 ```java
 class MyState implements VisibleState<MyState, MyAction> {
@@ -64,9 +65,10 @@ This is effective on stochastic games of perfect information, games involving no
 information where said information is hidden from all players. An action may involve randomness such that it can lead to
 one of many possible states.
 
-To use OLMCTS, you'll need to implement two interfaces: `VisibleState` and `StochasticAction`. The provided
-implementations are `OLMCTSRP` and `OLMCTSTP`. To handle information that is hidden from all players, you can treat its
-reveal as a random event; that is, you can bake it into `StochasticAction`.
+To use Open Loop MCTS, you'll need to implement two interfaces: `VisibleState` and `StochasticAction`. These represent
+game states and actions, respectively. You can then use the provided algorithm implementations, `OLMCTSRP` and
+`OLMCTSTP`. To handle information that is hidden from all players, you can treat its reveal as a random event; that is,
+you can bake it into `StochasticAction`.
 
 ```java
 class MyState implements VisibleState<MyState, MyAction> {
@@ -89,16 +91,16 @@ class MyAction implements StochasticAction<MyState> {
 ```
 
 ### Multiple-observer Information Set MCTS (MO-ISMCTS)
-Multiple-observer information set Monte Carlo tree search (MO-ISMCTS) is effective on games of imperfect information,
-where knowledge of the game state can vary between players. Each player maintains an information set that represents
-this knowledge. Furthermore, players do not see other players' actions directly since certain aspects of those actions
-may be hidden. Instead, players observe actions as moves, which are equivalence classes on actions. It is assumed that
-every player has full view of their own actions. Examples of games that MO-ISMCTS can handle are hearts, cribbage, and
-poker.
+This is effective on games of imperfect information, where knowledge of the game state can vary between players. Each
+player maintains an information set that represents this knowledge. Furthermore, players do not see other players'
+actions directly since certain aspects of those actions may be hidden. Instead, players observe actions as "moves,"
+which are equivalence classes on actions. It is assumed that every player has full view of their own actions. Examples
+of games that MO-ISMCTS can handle are hearts, cribbage, and poker.
 
-To use MO-ISMCTS, you'll need to implement four interfaces: `State`, `ObservableAction`, `InfoSet`, and `Move`. The
-provided implementations are `MOISMCTSRP` and `MOISMCTSTP`. Simultaneous actions can be modeled as sequential actions
-that are hidden from all other players until some event reveals them at once.
+To use MO-ISMCTS, you'll need to implement four interfaces: `State`, `ObservableAction`, `InfoSet`, and `Move`. These
+represent game states, actions, information sets, and moves, respectively. You can then use the provided algorithm
+implementations, `MOISMCTSRP` and `MOISMCTSTP`. Simultaneous actions can be modeled as sequential actions that are
+hidden from all other players until some event reveals them at once.
 
 ```java
 class MyState implements State<MyAction> {
@@ -136,13 +138,14 @@ class MyMove implements Move<MyAction> {
 }
 ```
 
-### Information Set MCTS (ISMCTS)
+### Information Set MCTS
 This is effective on games of imperfect information, where knowledge of the game state can vary between players. Each
 player maintains an information set that represents this knowledge. As actions are done, knowledge may be gained from
 them.
 
-To use ISMCTS, you'll need to implement three interfaces: `State`, `StochasticAction`, and `InfoSet`. The provided
-implementations are `ISMCTSRP` and `ISMCTSTP`. The `MOVE` type parameter of your `InfoSet` implementation should be the
+To use Information Set MCTS, you'll need to implement three interfaces: `State`, `StochasticAction`, and `InfoSet`.
+These represent game states, actions, and information sets, respectively. You can then use the provided algorithm
+implementations, `ISMCTSRP` and `ISMCTSTP`. The `MOVE` type parameter of your `InfoSet` implementation should be the
 type of your `StochasticAction`. This is because ISMCTS is a special case of MO-ISMCTS (see above) where all actions are
 fully visible to all players, hence moves and actions are one and the same.
 
