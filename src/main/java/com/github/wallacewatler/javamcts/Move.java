@@ -8,7 +8,6 @@ package com.github.wallacewatler.javamcts;
  * Implementations of {@code Move} should include {@link Object#equals} and {@link Object#hashCode} since moves are
  * internally used as keys in hashmaps.
  *
- * @version 0.1.0
  * @since 0.1.0
  *
  * @author Wallace Watler

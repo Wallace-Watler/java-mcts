@@ -9,6 +9,10 @@ package com.github.wallacewatler.javamcts;
  * @param numNodes The number of nodes searched.
  * @param numStates The number of unique states encountered. If a transposition table is not used, this will be 0.
  *
+ * @since 0.1.0
+ *
+ * @author Wallace Watler
+ *
  * @param <ACTION> the type of {@code bestAction}
  */
 public record SearchResults<ACTION>(

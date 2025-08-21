@@ -35,9 +35,10 @@ public final class TestSheepsheadIntelligence {
             }
             System.out.println("Player " + player + " plays " + action.card() + ".");
 
-            action.applyToState(rootState, rand);
             for(int pov = 0; pov < 4; pov++)
-                action.observe(pov).applyToInfoSet(infoSets.get(pov));
+                action.observe(rootState, pov).applyToInfoSet(infoSets.get(pov));
+
+            action.applyToState(rootState, rand);
         }
 
         final double[] rewards = rootState.scores();

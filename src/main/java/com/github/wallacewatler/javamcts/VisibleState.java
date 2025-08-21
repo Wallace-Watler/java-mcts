@@ -11,7 +11,6 @@ import java.util.List;
  * that). This trick does not work if the information is only hidden from some players but not others (see
  * {@link MOISMCTS} for handling that category of games).
  *
- * @version 0.1.0
  * @since 0.1.0
  *
  * @author Wallace Watler

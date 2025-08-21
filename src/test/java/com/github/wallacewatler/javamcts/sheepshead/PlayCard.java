@@ -27,7 +27,7 @@ public record PlayCard(Card card) implements ObservableAction<SheepsheadState, P
     }
 
     @Override
-    public PlayCard observe(int observer) {
+    public PlayCard observe(SheepsheadState context, int observer) {
         return this;
     }
 

@@ -9,7 +9,6 @@ import java.util.List;
  * place. This typically occurs at the end of the game, but in some cases the winner can be decided before the game
  * is over.
  *
- * @version 0.1.0
  * @since 0.1.0
  *
  * @author Wallace Watler

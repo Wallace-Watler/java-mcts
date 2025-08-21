@@ -6,7 +6,7 @@
 
     <groupId>com.github.wallace-watler.javamcts</groupId>
     <artifactId>javamcts</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <packaging>jar</packaging>
     <properties>
         <maven.compiler.source>20</maven.compiler.source>
@@ -36,6 +36,25 @@
             <timezone>America/Chicago</timezone>
         </developer>
     </developers>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
     <issueManagement>
         <system>GitHub</system>

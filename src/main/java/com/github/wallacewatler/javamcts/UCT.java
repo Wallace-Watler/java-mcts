@@ -11,7 +11,6 @@ package com.github.wallacewatler.javamcts;
  *                        multiple such actions, one is chosen at random. The recommended value is {@code true} unless
  *                        your application has a very high branching factor.
  *
- * @version 0.1.0
  * @since 0.1.0
  *
  * @author Wallace Watler

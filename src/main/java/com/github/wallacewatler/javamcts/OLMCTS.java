@@ -13,7 +13,6 @@ import java.util.Random;
  * random event; that is, you can bake it into {@code StochasticAction}. To handle information that is only hidden from
  * some players, use {@link MOISMCTS}.
  *
- * @version 0.1.0
  * @since 0.1.0
  *
  * @author Wallace Watler

@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * MO-ISMCTS with root parallelization. For details on how to use this class, see {@link MOISMCTS}.
  *
- * @version 0.1.0
  * @since 0.1.0
  *
  * @author Wallace Watler

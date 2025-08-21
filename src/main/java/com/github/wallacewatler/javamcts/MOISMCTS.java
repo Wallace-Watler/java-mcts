@@ -15,7 +15,6 @@ import java.util.Random;
  * {@link InfoSet}, and {@link Move}. You can then perform the search by calling {@link MOISMCTS#search} on one of the
  * provided {@code MOISMCTS} implementations (see below).
  *
- * @version 0.1.0
  * @since 0.1.0
  *
  * @author Wallace Watler

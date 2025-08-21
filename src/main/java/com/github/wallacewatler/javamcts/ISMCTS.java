@@ -13,7 +13,6 @@ import java.util.Random;
  * should be the type of your {@code StochasticAction}. This is because {@code ISMCTS} is a special case of
  * {@link MOISMCTS} where all actions are fully visible to all players, hence moves and actions are one and the same.
  *
- * @version 0.1.0
  * @since 0.1.0
  *
  * @author Wallace Watler

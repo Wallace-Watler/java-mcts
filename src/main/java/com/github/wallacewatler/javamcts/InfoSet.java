@@ -10,7 +10,6 @@ import java.util.Random;
  * On a conceptual level, information sets are analogous to states. As moves are observed during a game, information
  * sets are updated with whatever knowledge can be gained from them, similar to how states are updated by actions.
  *
- * @version 0.1.0
  * @since 0.1.0
  *
  * @author Wallace Watler

@@ -16,7 +16,6 @@ package com.github.wallacewatler.javamcts;
  * @param uct The UCT policy.
  * @param threadCount The number of threads to use for the search.
  *
- * @version 0.1.0
  * @since 0.1.0
  *
  * @author Wallace Watler

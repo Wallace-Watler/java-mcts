@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Information set MCTS with tree parallelization. For details on how to use this class, see {@link ISMCTS}.
  *
- * @version 0.1.0
  * @since 0.1.0
  *
  * @author Wallace Watler

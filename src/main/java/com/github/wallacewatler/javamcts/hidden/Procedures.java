@@ -110,7 +110,7 @@ public final class Procedures {
             final ArrayList<MoveSeqNode> nextLevel = new ArrayList<>(currentNodes.size());
             nodeLevels.add(nextLevel);
             for(int pov = 0; pov < currentNodes.size(); pov++) {
-                final MOVE move = selectedAction.observe(pov);
+                final MOVE move = selectedAction.observe(simulatedState, pov);
                 final MoveSeqNode node = currentNodes.get(pov);
                 node.createChildIfNotPresent(move);
                 nextLevel.add(node.getChild(move));
@@ -260,9 +260,10 @@ public final class Procedures {
     }
 
     /** Computes the valid moves for a state. */
-    private static <MOVE> List<MOVE> stateValidMoves(State<? extends ObservableAction<?, MOVE>> state) {
+    private static <STATE extends State<? extends ObservableAction<STATE, MOVE>>, MOVE>
+    List<MOVE> stateValidMoves(STATE state) {
         return state.validActions().stream()
-                .map(action -> action.observe(state.activePlayer()))
+                .map(action -> action.observe(state, state.activePlayer()))
                 .toList();
     }
 }

@@ -12,7 +12,6 @@ import java.util.Random;
  * You can then perform the search by calling {@link MCTS#search} on one of the provided {@code MCTS} implementations
  * (see below).
  *
- * @version 0.1.0
  * @since 0.1.0
  *
  * @author Wallace Watler

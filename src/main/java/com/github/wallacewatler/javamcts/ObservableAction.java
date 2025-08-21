@@ -11,7 +11,6 @@ import java.util.Random;
  * Implementations of {@code ObservableAction} should include {@link Object#equals} and {@link Object#hashCode} since
  * actions are internally used as keys in hashmaps.
  *
- * @version 0.1.0
  * @since 0.1.0
  *
  * @author Wallace Watler
@@ -37,11 +36,16 @@ public interface ObservableAction<STATE, MOVE> {
     STATE applyToState(STATE state, Random rand);
 
     /**
+     * Compute and return a move representing this action as observed from {@code observer}'s point of view. If
+     * {@code observer} is the player performing this action, the returned move must represent full knowledge of this
+     * action (i.e. the move must be a singleton). {@code context} is the state that generated this action and is
+     * provided as a convenience; without it, one may have to copy parts of the state into the action to fully describe
+     * said action. The use of {@code context} is optional, but it should not be mutated.
+     *
+     * @param context the state that generated this action
      * @param observer the player observing this action
      *
-     * @return A move representing this action as observed from {@code observer}'s point of view. If {@code observer} is
-     * the player performing this action, the returned move must represent full knowledge of this action (i.e. the move
-     * must be a singleton).
+     * @return A move representing this action as observed from {@code observer}'s point of view.
      */
-    MOVE observe(int observer);
+    MOVE observe(STATE context, int observer);
 }
