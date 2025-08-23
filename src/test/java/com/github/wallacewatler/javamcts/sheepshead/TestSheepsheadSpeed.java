@@ -8,17 +8,17 @@ import java.util.stream.IntStream;
 
 public final class TestSheepsheadSpeed {
     public static void main(String[] args) {
-        test(new MOISMCTSRP(), 1);
-        test(new MOISMCTSRP(), 2);
-        test(new MOISMCTSRP(), 3);
-        test(new MOISMCTSRP(), 4);
-        test(new MOISMCTSTP(), 1);
-        test(new MOISMCTSTP(), 2);
-        test(new MOISMCTSTP(), 3);
-        test(new MOISMCTSTP(), 4);
+        test(new ISMCTSRP(), 1);
+        test(new ISMCTSRP(), 2);
+        test(new ISMCTSRP(), 3);
+        test(new ISMCTSRP(), 4);
+        test(new ISMCTSTP(), 1);
+        test(new ISMCTSTP(), 2);
+        test(new ISMCTSTP(), 3);
+        test(new ISMCTSTP(), 4);
     }
 
-    private static void test(MOISMCTS moismcts, int threadCount) {
+    private static void test(ISMCTS ismcts, int threadCount) {
         final Sampler itersPerSec = new Sampler();
         final Sampler numNodes = new Sampler();
         final Sampler numStates = new Sampler();
@@ -32,27 +32,27 @@ public final class TestSheepsheadSpeed {
         final SearchParameters params = new SearchParameters(0, 1000, Integer.MAX_VALUE, uct, threadCount);
 
         for(int i = 0; i < warmupSamples; i++) {
-            final SearchResults<PlayCard> results = moismcts.search(4, infoSets.get(rootState.activePlayer), params, rand);
+            final SearchResults<PlayCard> results = ismcts.search(4, infoSets.get(rootState.activePlayer), params, rand);
             itersPerSec.addSample(1000 * results.itersPerThread() * threadCount / results.duration());
             numNodes.addSample(results.numNodes());
             numStates.addSample(results.numStates());
             final String itersPerSecCI = String.format("%,.0f ± %,.0f", itersPerSec.getMean(), itersPerSec.getStdDev() * 2);
             final String numNodesCI = String.format("%,.0f ± %,.0f", numNodes.getMean(), numNodes.getStdDev() * 2);
             final String numStatesCI = String.format("%,.0f ± %,.0f", numStates.getMean(), numStates.getStdDev() * 2);
-            System.out.printf("[WARMUP] %s, %d threads | %s iterations / sec | %s nodes | %s states%n", moismcts, threadCount, itersPerSecCI, numNodesCI, numStatesCI);
+            System.out.printf("[WARMUP] %s, %d threads | %s iterations / sec | %s nodes | %s states%n", ismcts, threadCount, itersPerSecCI, numNodesCI, numStatesCI);
         }
 
         itersPerSec.reset();
 
         for(int i = 0; i < realSamples; i++) {
-            final SearchResults<PlayCard> results = moismcts.search(4, infoSets.get(rootState.activePlayer), params, rand);
+            final SearchResults<PlayCard> results = ismcts.search(4, infoSets.get(rootState.activePlayer), params, rand);
             itersPerSec.addSample(1000 * results.itersPerThread() * threadCount / results.duration());
             numNodes.addSample(results.numNodes());
             numStates.addSample(results.numStates());
             final String itersPerSecCI = String.format("%,.0f ± %,.0f", itersPerSec.getMean(), itersPerSec.getStdDev() * 2);
             final String numNodesCI = String.format("%,.0f ± %,.0f", numNodes.getMean(), numNodes.getStdDev() * 2);
             final String numStatesCI = String.format("%,.0f ± %,.0f", numStates.getMean(), numStates.getStdDev() * 2);
-            System.out.printf("%s, %d threads | %s iterations / sec | %s nodes | %s states%n", moismcts, threadCount, itersPerSecCI, numNodesCI, numStatesCI);
+            System.out.printf("%s, %d threads | %s iterations / sec | %s nodes | %s states%n", ismcts, threadCount, itersPerSecCI, numNodesCI, numStatesCI);
         }
     }
 }

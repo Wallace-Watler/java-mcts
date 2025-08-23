@@ -11,9 +11,9 @@ import java.util.Random;
  * actions that are hidden from all other players until some event reveals them at once. Examples of games that
  * MO-ISMCTS can handle are hearts, cribbage, and poker.
  * <p>
- * To use {@code MOISMCTS}, you'll need to implement four interfaces: {@link State}, {@link ObservableAction},
- * {@link InfoSet}, and {@link Move}. You can then perform the search by calling {@link MOISMCTS#search} on one of the
- * provided {@code MOISMCTS} implementations (see below).
+ * To use {@code MOISMCTS}, you'll need to implement three interfaces: {@link State}, {@link ObservableAction}, and
+ * {@link InfoSet}. You can then perform the search by calling {@link MOISMCTS#search} on one of the provided
+ * {@code MOISMCTS} implementations (see below).
  *
  * @since 0.1.0
  *
@@ -41,11 +41,10 @@ public interface MOISMCTS {
      *
      * @param <STATE> the type of state this search will operate on
      * @param <ACTION> the type of action this search will operate on
-     * @param <MOVE> the type of move this search will operate on
      *
      * @see SearchParameters
      * @see SearchResults
      */
-    <STATE extends State<ACTION>, ACTION extends ObservableAction<STATE, MOVE>, MOVE extends Move<ACTION>>
-    SearchResults<ACTION> search(int numPlayers, InfoSet<STATE, MOVE> infoSet, SearchParameters params, Random rand);
+    <STATE extends State<ACTION>, ACTION extends ObservableAction<STATE>>
+    SearchResults<ACTION> search(int numPlayers, InfoSet<STATE, ACTION> infoSet, SearchParameters params, Random rand);
 }

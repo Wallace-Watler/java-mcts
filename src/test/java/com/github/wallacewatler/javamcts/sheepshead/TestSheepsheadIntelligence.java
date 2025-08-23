@@ -1,6 +1,6 @@
 package com.github.wallacewatler.javamcts.sheepshead;
 
-import com.github.wallacewatler.javamcts.MOISMCTSTP;
+import com.github.wallacewatler.javamcts.ISMCTSTP;
 import com.github.wallacewatler.javamcts.SearchParameters;
 import com.github.wallacewatler.javamcts.UCT;
 
@@ -31,12 +31,12 @@ public final class TestSheepsheadIntelligence {
 
                 action = availableActions.get(in.nextInt() - 1);
             } else {
-                action = new MOISMCTSTP().search(4, infoSets.get(player), params, rand).bestAction();
+                action = new ISMCTSTP().search(4, infoSets.get(player), params, rand).bestAction();
             }
             System.out.println("Player " + player + " plays " + action.card() + ".");
 
             for(int pov = 0; pov < 4; pov++)
-                action.observe(rootState, pov).applyToInfoSet(infoSets.get(pov));
+                action.applyToInfoSet(infoSets.get(pov));
 
             action.applyToState(rootState, rand);
         }

@@ -15,12 +15,12 @@ import java.util.Random;
  * @author Wallace Watler
  *
  * @param <STATE> the type of state this information set models knowledge of
- * @param <MOVE> the type of moves done by the owner of this information set
+ * @param <ACTION> the type of actions done by the owner of this information set
  *
  * @see State
  * @see Move
  */
-public interface InfoSet<STATE, MOVE> {
+public interface InfoSet<STATE, ACTION> {
     /**
      * @return The player that this information set belongs to.
      */
@@ -39,7 +39,7 @@ public interface InfoSet<STATE, MOVE> {
     STATE determinize(Random rand);
 
     /**
-     * @return A list containing the valid moves for the owner of this information set.
+     * @return A list containing the valid actions for the owner of this information set.
      */
-    List<MOVE> validMoves();
+    List<ACTION> validActions();
 }

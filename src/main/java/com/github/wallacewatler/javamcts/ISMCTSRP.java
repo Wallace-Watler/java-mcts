@@ -21,7 +21,8 @@ public final class ISMCTSRP implements ISMCTS, Cloneable {
         if(numPlayers < 1)
             throw new IllegalArgumentException("numPlayers must be at least 1");
 
-        if(infoSet.validMoves().isEmpty())
+        final List<ACTION> validActions = infoSet.validActions();
+        if(validActions.isEmpty())
             return new SearchResults<>(null, 0, 0, 1, 1);
 
         // These are shared across threads
@@ -64,16 +65,12 @@ public final class ISMCTSRP implements ISMCTS, Cloneable {
         final HashMap<ACTION, Integer> votes = new HashMap<>();
         int numNodes = 0;
         for(ActionSeqNode root : rootNodes) {
-            final ACTION action = Procedures.mostVisited(root, infoSet.validMoves(), rand);
+            final ACTION action = Procedures.mostVisited(root, validActions, rand);
             votes.put(action, votes.getOrDefault(action, 0) + 1);
             numNodes += root.numNodes();
         }
 
-        final ACTION bestAction = votes.entrySet().stream()
-                .max(Comparator.comparingInt(Map.Entry::getValue))
-                .get()
-                .getKey();
-
+        final ACTION bestAction = votes.entrySet().stream().max(Comparator.comparingInt(Map.Entry::getValue)).get().getKey();
         final double itersPerThread = (double) totalIters.get() / params.threadCount();
         return new SearchResults<>(bestAction, itersPerThread, System.currentTimeMillis() - start, numNodes, 0);
     }

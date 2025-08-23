@@ -90,54 +90,6 @@ class MyAction implements StochasticAction<MyState> {
 }
 ```
 
-### Multiple-observer Information Set MCTS (MO-ISMCTS)
-This is effective on games of imperfect information, where knowledge of the game state can vary between players. Each
-player maintains an information set that represents this knowledge. Furthermore, players do not see other players'
-actions directly since certain aspects of those actions may be hidden. Instead, players observe actions as "moves,"
-which are equivalence classes on actions. It is assumed that every player has full view of their own actions. Examples
-of games that MO-ISMCTS can handle are hearts, cribbage, and poker.
-
-To use MO-ISMCTS, you'll need to implement four interfaces: `State`, `ObservableAction`, `InfoSet`, and `Move`. These
-represent game states, actions, information sets, and moves, respectively. You can then use the provided algorithm
-implementations, `MOISMCTSRP` and `MOISMCTSTP`. Simultaneous actions can be modeled as sequential actions that are
-hidden from all other players until some event reveals them at once.
-
-```java
-class MyState implements State<MyAction> {
-  // Your game's state here
-
-  public int activePlayer() { /* ... */ }
-
-  public List<MyAction> validActions() { /* ... */ }
-
-  public double[] scores() { /* ... */ }
-}
-
-class MyAction implements ObservableAction<MyState, MyMove> {
-  // Your action data here
-  
-  public MyState applyToState(MyState state, Random rand) { /* ... */ }
-  
-  public MyMove observe(int observer) { /* ... */ }
-}
-
-class MyInfoSet implements InfoSet<MyState, MyMove> {
-  // Your information set data here
-  
-  public int owner() { /* ... */ }
-  
-  public MyState determinize(Random rand) { /* ... */ }
-  
-  public List<MyMove> validMoves() { /* ... */ }
-}
-
-class MyMove implements Move<MyAction> {
-  // Your move data here
-  
-  public MyAction asAction() { /* ... */ }
-}
-```
-
 ### Information Set MCTS
 This is effective on games of imperfect information, where knowledge of the game state can vary between players. Each
 player maintains an information set that represents this knowledge. As actions are done, knowledge may be gained from
@@ -145,9 +97,7 @@ them.
 
 To use Information Set MCTS, you'll need to implement three interfaces: `State`, `StochasticAction`, and `InfoSet`.
 These represent game states, actions, and information sets, respectively. You can then use the provided algorithm
-implementations, `ISMCTSRP` and `ISMCTSTP`. The `MOVE` type parameter of your `InfoSet` implementation should be the
-type of your `StochasticAction`. This is because ISMCTS is a special case of MO-ISMCTS (see above) where all actions are
-fully visible to all players, hence moves and actions are one and the same.
+implementations, `ISMCTSRP` and `ISMCTSTP`.
 
 ```java
 class MyState implements State<MyAction> {
@@ -173,6 +123,48 @@ class MyInfoSet implements InfoSet<MyState, MyAction> {
   
   public MyState determinize(Random rand) { /* ... */ }
   
-  public List<MyAction> validMoves() { /* ... */ }
+  public List<MyAction> validActions() { /* ... */ }
+}
+```
+
+### Multiple-observer Information Set MCTS (MO-ISMCTS)
+This is effective on games of imperfect information, where knowledge of the game state can vary between players. Each
+player maintains an information set that represents this knowledge. Furthermore, players do not see other players'
+actions directly since certain aspects of those actions may be hidden. Instead, players observe actions as "moves,"
+which are equivalence classes on actions. It is assumed that every player has full view of their own actions. Examples
+of games that MO-ISMCTS can handle are hearts, cribbage, and poker.
+
+To use MO-ISMCTS, you'll need to implement three interfaces: `State`, `ObservableAction`, and `InfoSet`. These represent
+game states, actions, and information sets, respectively. You can then use the provided algorithm implementations,
+`MOISMCTSRP` and `MOISMCTSTP`. Simultaneous actions can be modeled as sequential actions that are hidden from all other
+players until some event reveals them at once.
+
+```java
+class MyState implements State<MyAction> {
+  // Your game's state here
+
+  public int activePlayer() { /* ... */ }
+
+  public List<MyAction> validActions() { /* ... */ }
+
+  public double[] scores() { /* ... */ }
+}
+
+class MyAction implements ObservableAction<MyState> {
+  // Your action data here
+  
+  public MyState applyToState(MyState state, Random rand) { /* ... */ }
+  
+  public Object observe(int observer) { /* ... */ }
+}
+
+class MyInfoSet implements InfoSet<MyState, MyAction> {
+  // Your information set data here
+  
+  public int owner() { /* ... */ }
+  
+  public MyState determinize(Random rand) { /* ... */ }
+  
+  public List<MyAction> validActions() { /* ... */ }
 }
 ```

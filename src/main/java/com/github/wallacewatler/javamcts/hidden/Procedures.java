@@ -71,8 +71,8 @@ public final class Procedures {
     /**
      * Do an iteration of MO-ISMCTS.
      */
-    public static <STATE extends State<ACTION>, ACTION extends ObservableAction<STATE, MOVE>, MOVE extends Move<ACTION>>
-    void iterMOISMCTS(InfoSet<STATE, MOVE> infoSet, ArrayList<MoveSeqNode> rootNodes, UCT uct, Random rand) {
+    public static <STATE extends State<ACTION>, ACTION extends ObservableAction<STATE>>
+    void iterMOISMCTS(InfoSet<STATE, ACTION> infoSet, ArrayList<MoveSeqNode> rootNodes, UCT uct, Random rand) {
         /*
         Stores the path of traversal through each player's search tree. The first element of the outer list is the root
         nodes, the second element is the nodes one level down, etc.
@@ -88,29 +88,30 @@ public final class Procedures {
 
         // Choose a random determinized state consistent with the information set of the player searching the tree.
         STATE simulatedState = infoSet.determinize(rand);
-        List<MOVE> validMoves = stateValidMoves(simulatedState);
+
+        // These are singleton moves from the POV of the active player.
+        List<ACTION> validActions = simulatedState.validActions();
+        int activePlayer = simulatedState.activePlayer();
 
         // Selection and Expansion - Select child nodes using UCT, expanding where necessary.
         boolean continueSelection = true;
         while(simulatedState.scores() == null && continueSelection) {
-            final MOVE selectedMove = uctSelection(activeNode, validMoves, simulatedState.activePlayer(), uct, rand);
+            final ACTION selectedAction = uctSelection(activeNode, validActions, activePlayer, uct, rand);
 
-            for(MOVE move : validMoves) {
-                activeNode.createChildIfNotPresent(move);
-                activeNode.getChild(move).incAvailableCount();
+            for(ACTION action : validActions) {
+                activeNode.createChildIfNotPresent(action);
+                activeNode.getChild(action).incAvailableCount();
             }
 
-            final MoveSeqNode selectedChild = activeNode.getChild(selectedMove);
+            final MoveSeqNode selectedChild = activeNode.getChild(selectedAction);
             if(selectedChild.visitCount() == 0)
                 continueSelection = false;
-
-            final ACTION selectedAction = selectedMove.asAction();
 
             // Use the selected action to descend through each player's tree.
             final ArrayList<MoveSeqNode> nextLevel = new ArrayList<>(currentNodes.size());
             nodeLevels.add(nextLevel);
             for(int pov = 0; pov < currentNodes.size(); pov++) {
-                final MOVE move = selectedAction.observe(simulatedState, pov);
+                final Object move = selectedAction.observe(simulatedState, pov);
                 final MoveSeqNode node = currentNodes.get(pov);
                 node.createChildIfNotPresent(move);
                 nextLevel.add(node.getChild(move));
@@ -119,15 +120,16 @@ public final class Procedures {
 
             // Set up for next selection
             simulatedState = selectedAction.applyToState(simulatedState, rand);
-            validMoves = stateValidMoves(simulatedState);
+            validActions = simulatedState.validActions();
+            activePlayer = simulatedState.activePlayer();
             activeNode = currentNodes.get(simulatedState.activePlayer());
         }
 
         // Simulation - Choose a random action until the game is decided.
         while(simulatedState.scores() == null) {
-            final ACTION action = validMoves.get(rand.nextInt(validMoves.size())).asAction();
+            final ACTION action = validActions.get(rand.nextInt(validActions.size()));
             simulatedState = action.applyToState(simulatedState, rand);
-            validMoves = stateValidMoves(simulatedState);
+            validActions = simulatedState.validActions();
         }
 
         // Backpropagation - Update all nodes that were selected with the results of simulation.
@@ -257,13 +259,5 @@ public final class Procedures {
         final double[] scores = simulatedState.scores();
         while(!nodePath.isEmpty())
             nodePath.removeLast().updateScores(scores);
-    }
-
-    /** Computes the valid moves for a state. */
-    private static <STATE extends State<? extends ObservableAction<STATE, MOVE>>, MOVE>
-    List<MOVE> stateValidMoves(STATE state) {
-        return state.validActions().stream()
-                .map(action -> action.observe(state, state.activePlayer()))
-                .toList();
     }
 }

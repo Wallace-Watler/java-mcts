@@ -147,7 +147,7 @@ public final class InfoSet implements com.github.wallacewatler.javamcts.InfoSet<
             for(Trick trick : copy.playerInfos[i].takenTricks)
                 state.players[i].takenTricks.add(new Trick(trick));
         }
-        assert copy.possiblyInBlind.size() == 0;
+        assert copy.possiblyInBlind.isEmpty();
         assert copy.confirmedInBlind.size() == 2;
         state.blind[0] = copy.confirmedInBlind.get(0);
         state.blind[1] = copy.confirmedInBlind.get(1);
@@ -156,7 +156,7 @@ public final class InfoSet implements com.github.wallacewatler.javamcts.InfoSet<
     }
 
     @Override
-    public List<PlayCard> validMoves() {
+    public List<PlayCard> validActions() {
         return Sheepshead.playableCards(playerInfos[pov].confirmedInHand, trickOnTable);
     }
 

@@ -3,6 +3,7 @@ package com.github.wallacewatler.javamcts;
 import com.github.wallacewatler.javamcts.hidden.ActionSeqNode;
 import com.github.wallacewatler.javamcts.hidden.Procedures;
 
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,7 +23,8 @@ public final class ISMCTSTP implements ISMCTS, Cloneable {
         if(numPlayers < 1)
             throw new IllegalArgumentException("numPlayers must be at least 1");
 
-        if(infoSet.validMoves().isEmpty())
+        final List<ACTION> validActions = infoSet.validActions();
+        if(validActions.isEmpty())
             return new SearchResults<>(null, 0, 0, 1, 1);
 
         // These are shared across threads
@@ -56,7 +58,7 @@ public final class ISMCTSTP implements ISMCTS, Cloneable {
         }
 
         // Recommend the most selected action. Ties are broken by randomness.
-        final ACTION bestAction = Procedures.mostVisited(rootNode, infoSet.validMoves(), rand);
+        final ACTION bestAction = Procedures.mostVisited(rootNode, validActions, rand);
         final double itersPerThread = (double) iters.get() / params.threadCount();
         return new SearchResults<>(bestAction, itersPerThread, System.currentTimeMillis() - start, rootNode.numNodes(), 0);
     }

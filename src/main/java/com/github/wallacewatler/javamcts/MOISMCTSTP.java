@@ -17,12 +17,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class MOISMCTSTP implements MOISMCTS, Cloneable {
     @Override
     public
-    <STATE extends State<ACTION>, ACTION extends ObservableAction<STATE, MOVE>, MOVE extends Move<ACTION>>
-    SearchResults<ACTION> search(int numPlayers, InfoSet<STATE, MOVE> infoSet, SearchParameters params, Random rand) {
+    <STATE extends State<ACTION>, ACTION extends ObservableAction<STATE>>
+    SearchResults<ACTION> search(int numPlayers, InfoSet<STATE, ACTION> infoSet, SearchParameters params, Random rand) {
         if(numPlayers < 1)
             throw new IllegalArgumentException("numPlayers must be at least 1");
 
-        if(infoSet.validMoves().isEmpty())
+        final List<ACTION> validActions = infoSet.validActions();
+        if(validActions.isEmpty())
             return new SearchResults<>(null, 0, 0, 1, 1);
 
         // These are shared across threads
@@ -60,9 +61,9 @@ public final class MOISMCTSTP implements MOISMCTS, Cloneable {
 
         // Recommend the most selected action. Ties are broken by randomness.
         final MoveSeqNode rootNode = rootNodes.get(infoSet.owner());
-        final MOVE bestMove = Procedures.mostVisited(rootNode, infoSet.validMoves(), rand);
+        final ACTION bestAction = Procedures.mostVisited(rootNode, validActions, rand);
         final double itersPerThread = (double) iters.get() / params.threadCount();
-        return new SearchResults<>(bestMove.asAction(), itersPerThread, System.currentTimeMillis() - start, rootNode.numNodes(), 0);
+        return new SearchResults<>(bestAction, itersPerThread, System.currentTimeMillis() - start, rootNode.numNodes(), 0);
     }
 
     @Override

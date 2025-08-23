@@ -9,11 +9,11 @@ import java.util.stream.IntStream;
 
 public final class TestSheepsheadCorrectness {
     public static void main(String[] args) {
-        testMOISMCTS(new MOISMCTSRP());
-        testMOISMCTS(new MOISMCTSTP());
+        testISMCTS(new ISMCTSRP());
+        testISMCTS(new ISMCTSTP());
     }
 
-    private static void testMOISMCTS(MOISMCTS moismcts) {
+    private static void testISMCTS(ISMCTS ismcts) {
         final Random rand = new Random();
 
         final SheepsheadState rootState = new SheepsheadState(rand);
@@ -25,7 +25,7 @@ public final class TestSheepsheadCorrectness {
         while(!rootState.validActions().isEmpty()) {
             System.out.println("Table: " + Arrays.toString(rootState.trickOnTable.cards) + ", led " + rootState.trickOnTable.ledCard());
 
-            final SearchResults<PlayCard> results = moismcts.search(4, infoSets.get(rootState.activePlayer), params, rand);
+            final SearchResults<PlayCard> results = ismcts.search(4, infoSets.get(rootState.activePlayer), params, rand);
             final PlayCard bestAction = results.bestAction();
             bestAction.applyToState(rootState, rand);
             for(int pov = 0; pov < 4; pov++)

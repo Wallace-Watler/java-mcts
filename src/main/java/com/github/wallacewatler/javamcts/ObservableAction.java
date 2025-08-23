@@ -16,12 +16,10 @@ import java.util.Random;
  * @author Wallace Watler
  *
  * @param <STATE> the type of state this action applies to
- * @param <MOVE> the type of move this action appears as when observed by a player
  *
  * @see State
- * @see Move
  */
-public interface ObservableAction<STATE, MOVE> {
+public interface ObservableAction<STATE> {
     /**
      * Compute and return the result of applying this action to {@code state}. {@code rand} should be used to compute
      * stochastic game mechanics. {@code state} may be mutated by this method. If {@code state} is an object, it is
@@ -38,14 +36,17 @@ public interface ObservableAction<STATE, MOVE> {
     /**
      * Compute and return a move representing this action as observed from {@code observer}'s point of view. If
      * {@code observer} is the player performing this action, the returned move must represent full knowledge of this
-     * action (i.e. the move must be a singleton). {@code context} is the state that generated this action and is
-     * provided as a convenience; without it, one may have to copy parts of the state into the action to fully describe
-     * said action. The use of {@code context} is optional, but it should not be mutated.
+     * action (i.e. the move must be a singleton). {@link Object#equals} and {@link Object#hashCode} should be defined
+     * on the returned object since moves are internally used as keys in hashmaps.
+     * <p>
+     * {@code context} is the state that generated this action and is provided as a convenience; without it, one may
+     * have to copy parts of the state into the action to fully describe said action. The use of {@code context} is
+     * optional, but it should not be mutated.
      *
      * @param context the state that generated this action
      * @param observer the player observing this action
      *
      * @return A move representing this action as observed from {@code observer}'s point of view.
      */
-    MOVE observe(STATE context, int observer);
+    Object observe(STATE context, int observer);
 }

@@ -1,14 +1,13 @@
 package com.github.wallacewatler.javamcts.sheepshead;
 
-import com.github.wallacewatler.javamcts.Move;
-import com.github.wallacewatler.javamcts.ObservableAction;
+import com.github.wallacewatler.javamcts.StochasticAction;
 
 import java.util.Random;
 
 /**
  * The only type of action in my simplified Sheepshead. It is visible to everyone.
  */
-public record PlayCard(Card card) implements ObservableAction<SheepsheadState, PlayCard>, Move<PlayCard> {
+public record PlayCard(Card card) implements StochasticAction<SheepsheadState> {
     @Override
     public SheepsheadState applyToState(SheepsheadState state, Random rand) {
         final Player player = state.players[state.activePlayer];
@@ -24,11 +23,6 @@ public record PlayCard(Card card) implements ObservableAction<SheepsheadState, P
             state.activePlayer = (state.activePlayer + 1) % 4;
         }
         return state;
-    }
-
-    @Override
-    public PlayCard observe(SheepsheadState context, int observer) {
-        return this;
     }
 
     public InfoSet applyToInfoSet(InfoSet infoSet) {
@@ -58,10 +52,5 @@ public record PlayCard(Card card) implements ObservableAction<SheepsheadState, P
         }
 
         return infoSet;
-    }
-
-    @Override
-    public PlayCard asAction() {
-        return this;
     }
 }

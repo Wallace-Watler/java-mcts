@@ -5,13 +5,11 @@ import java.util.Random;
 /**
  * Information set Monte Carlo tree search (ISMCTS) is effective on games of imperfect information, where knowledge of
  * the game state can vary between players. Each player maintains an information set that represents this knowledge. As
- * actions are done, knowledge may be gained from them.
+ * actions are done, knowledge may be gained from them. In ISMCTS, all actions are fully visible to all players.
  * <p>
  * To use {@code ISMCTS}, you'll need to implement three interfaces: {@link State}, {@link StochasticAction}, and
  * {@link InfoSet}. You can then perform the search by calling {@link ISMCTS#search} on one of the provided
- * {@code ISMCTS} implementations (see below). The {@code MOVE} type parameter of your {@code InfoSet} implementation
- * should be the type of your {@code StochasticAction}. This is because {@code ISMCTS} is a special case of
- * {@link MOISMCTS} where all actions are fully visible to all players, hence moves and actions are one and the same.
+ * {@code ISMCTS} implementations (see below).
  *
  * @since 0.1.0
  *
